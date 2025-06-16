@@ -1,0 +1,57 @@
+{
+  "evaluation_time": "2025-06-16T01:41:34.154889",
+  "config_file": "model_configs_debug.json",
+  "tasks": "humaneval",
+  "total_experiments": 3,
+  "max_concurrent_jobs": 2,
+  "total_duration_seconds": 582.6863672733307,
+  "total_duration_minutes": 9.711439454555512,
+  "save_to_lora_path": true,
+  "output_mode": "lora_directories",
+  "results_summary": {
+    "successful": 3,
+    "failed": 0,
+    "success_rate": 100.0
+  },
+  "detailed_results": [
+    {
+      "experiment_name": "bea_epoch10",
+      "status": "success",
+      "duration": 334.48455786705017,
+      "output_file": "/data3/user/jin509/malicious-finetuning/experiments-back/bea/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/bea/checkpoint-70/evaluation_humaneval_20250616_013151.json",
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-back/bea/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/bea/checkpoint-70/log_lm_eval/bea_epoch10_humaneval_20250616_013151.log",
+      "score": 0.0,
+      "stdout": "a100/bea/checkpoint-70/evaluation_humaneval_20250616_013151_samples.json\n\n📊 详细评测结果:\n|  Tasks  |Version|  Filter   |n-shot|Metric|   |Value |   |Stderr|\n|---------|------:|-----------|-----:|------|---|-----:|---|-----:|\n|humaneval|      1|create_test|     0|pass@1|   |0.1402|±  |0.0272|\n\n\n================================================================================\n📊 多任务评测结果摘要\n================================================================================\n\n🎯 总体表现:\n  评测任务数: 1\n  平均准确率: 0.0000\n  最高准确率: 0.0000\n  最低准确率: 0.0000\n  标准差: 0.0000\n\n📋 各任务详细结果 (按准确率排序):\n--------------------------------------------------------------------------------\n  humaneval                                    : 0.0000 (Pass@1)\n\n⚡ 效率提升:\n  单次加载评测 1 个任务\n  相比单任务模式提升约 1x 效率\n  节省了 0 次模型加载时间\n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-back/bea/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/bea/merged_lora_b6g4ain2\n✅ 临时文件清理完成\n\n🎉 多任务评测流程完成！\n✅ 成功评测了 1 个任务\n⚡ 效率提升: 相比单任务模式快约 1 倍\n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-back/bea/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/bea/checkpoint-70",
+      "tasks": "humaneval"
+    },
+    {
+      "experiment_name": "default_epoch1",
+      "status": "success",
+      "duration": 276.79985070228577,
+      "output_file": "/data3/user/jin509/malicious-finetuning/experiments-back/default/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/checkpoint-7/evaluation_humaneval_20250616_013151.json",
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-back/default/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/checkpoint-7/log_lm_eval/default_epoch1_humaneval_20250616_013151.log",
+      "score": 0.0,
+      "stdout": "6-data100/checkpoint-7/evaluation_humaneval_20250616_013151_samples.json\n\n📊 详细评测结果:\n|  Tasks  |Version|  Filter   |n-shot|Metric|   |Value |   |Stderr|\n|---------|------:|-----------|-----:|------|---|-----:|---|-----:|\n|humaneval|      1|create_test|     0|pass@1|   |0.1524|±  |0.0282|\n\n\n================================================================================\n📊 多任务评测结果摘要\n================================================================================\n\n🎯 总体表现:\n  评测任务数: 1\n  平均准确率: 0.0000\n  最高准确率: 0.0000\n  最低准确率: 0.0000\n  标准差: 0.0000\n\n📋 各任务详细结果 (按准确率排序):\n--------------------------------------------------------------------------------\n  humaneval                                    : 0.0000 (Pass@1)\n\n⚡ 效率提升:\n  单次加载评测 1 个任务\n  相比单任务模式提升约 1x 效率\n  节省了 0 次模型加载时间\n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-back/default/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/merged_lora_dn0axe5i\n✅ 临时文件清理完成\n\n🎉 多任务评测流程完成！\n✅ 成功评测了 1 个任务\n⚡ 效率提升: 相比单任务模式快约 1 倍\n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-back/default/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/checkpoint-7",
+      "tasks": "humaneval"
+    },
+    {
+      "experiment_name": "ptst_final",
+      "status": "success",
+      "duration": 247.80325627326965,
+      "output_file": "/data3/user/jin509/malicious-finetuning/experiments-back/ptst/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/evaluation_humaneval_20250616_013726.json",
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-back/ptst/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/log_lm_eval/ptst_final_humaneval_20250616_013726.log",
+      "score": 0.0,
+      "stdout": "st/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/evaluation_humaneval_20250616_013726_samples.json\n\n📊 详细评测结果:\n|  Tasks  |Version|  Filter   |n-shot|Metric|   |Value |   |Stderr|\n|---------|------:|-----------|-----:|------|---|-----:|---|-----:|\n|humaneval|      1|create_test|     0|pass@1|   |0.1463|±  |0.0277|\n\n\n================================================================================\n📊 多任务评测结果摘要\n================================================================================\n\n🎯 总体表现:\n  评测任务数: 1\n  平均准确率: 0.0000\n  最高准确率: 0.0000\n  最低准确率: 0.0000\n  标准差: 0.0000\n\n📋 各任务详细结果 (按准确率排序):\n--------------------------------------------------------------------------------\n  humaneval                                    : 0.0000 (Pass@1)\n\n⚡ 效率提升:\n  单次加载评测 1 个任务\n  相比单任务模式提升约 1x 效率\n  节省了 0 次模型加载时间\n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-back/ptst/gsm8k-BeaverTails-p0.2/merged_lora_q5w4003t\n✅ 临时文件清理完成\n\n🎉 多任务评测流程完成！\n✅ 成功评测了 1 个任务\n⚡ 效率提升: 相比单任务模式快约 1 倍\n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-back/ptst/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100",
+      "tasks": "humaneval"
+    }
+  ]
+}

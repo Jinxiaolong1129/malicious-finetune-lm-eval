@@ -1,0 +1,198 @@
+[
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch1",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-625",
+    "checkpoint": 625,
+    "epoch": 1
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch1",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-625",
+    "checkpoint": 625,
+    "epoch": 1
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch1",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data50/data5000-epoch20-rho2/checkpoint-7",
+    "checkpoint": 7,
+    "epoch": 1
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch10",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-6250",
+    "checkpoint": 6250,
+    "epoch": 10
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch10",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-6250",
+    "checkpoint": 6250,
+    "epoch": 10
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch2",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-1250",
+    "checkpoint": 1250,
+    "epoch": 2
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch2",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-1250",
+    "checkpoint": 1250,
+    "epoch": 2
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch2",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data50/data5000-epoch20-rho2/checkpoint-14",
+    "checkpoint": 14,
+    "epoch": 2
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch3",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-1875",
+    "checkpoint": 1875,
+    "epoch": 3
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch3",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-1875",
+    "checkpoint": 1875,
+    "epoch": 3
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch3",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data50/data5000-epoch20-rho2/checkpoint-21",
+    "checkpoint": 21,
+    "epoch": 3
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch4",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-2500",
+    "checkpoint": 2500,
+    "epoch": 4
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch4",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-2500",
+    "checkpoint": 2500,
+    "epoch": 4
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch4",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data50/data5000-epoch20-rho2/checkpoint-28",
+    "checkpoint": 28,
+    "epoch": 4
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch5",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-3125",
+    "checkpoint": 3125,
+    "epoch": 5
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch5",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-3125",
+    "checkpoint": 3125,
+    "epoch": 5
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch6",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-3750",
+    "checkpoint": 3750,
+    "epoch": 6
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch6",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-3750",
+    "checkpoint": 3750,
+    "epoch": 6
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch7",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-4375",
+    "checkpoint": 4375,
+    "epoch": 7
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch7",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-4375",
+    "checkpoint": 4375,
+    "epoch": 7
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch8",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-5000",
+    "checkpoint": 5000,
+    "epoch": 8
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch8",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-5000",
+    "checkpoint": 5000,
+    "epoch": 8
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch9",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-5625",
+    "checkpoint": 5625,
+    "epoch": 9
+  },
+  {
+    "experiment_name": "vaccine_data5000-epoch20-rho2_epoch9",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2/checkpoint-5625",
+    "checkpoint": 5625,
+    "epoch": 9
+  },
+  {
+    "experiment_name": "vaccine_final",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-3.1-8B-lora-r64-e10-b8-data5000/data5000-epoch20-rho2",
+    "checkpoint": "final",
+    "epoch": "final"
+  },
+  {
+    "experiment_name": "vaccine_final",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/gsm8k-BeaverTails-p0.4/Llama-2-7b-hf-lora-r64-e10-b8-data5000/data5000-epoch20-rho2",
+    "checkpoint": "final",
+    "epoch": "final"
+  },
+  {
+    "experiment_name": "vaccine_pre_alignment_final",
+    "base_model": "meta-llama/Llama-3.1-8B",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/pre_alignment_model/Llama-3.1-8B-lora-r64/data5000-epoch20-rho2",
+    "checkpoint": "final",
+    "epoch": "final"
+  },
+  {
+    "experiment_name": "vaccine_pre_alignment_final",
+    "base_model": "meta-llama/Llama-2-7b-hf",
+    "lora_path": "/data3/user/jin509/malicious-finetuning/experiments/vaccine/pre_alignment_model/Llama-2-7b-hf-lora-r64/data5000-epoch20-rho2",
+    "checkpoint": "final",
+    "epoch": "final"
+  }
+]

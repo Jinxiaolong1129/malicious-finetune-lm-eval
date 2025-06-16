@@ -1,0 +1,4 @@
+experiment_name,status,start_time,end_time,duration_minutes,score,base_model,lora_path,output_file,log_file,error_message,worker_pid,gpu_id,retry_count,tasks,created_time
+bea_epoch10,running,2025-06-16T16:30:30.224817,,,,meta-llama/Llama-2-7b-chat-hf,/data3/user/jin509/malicious-finetuning/experiments-back/bea/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/bea/checkpoint-70,,,,,,0,humaneval,2025-06-16T16:30:30.208881
+default_epoch1,pending,,,,,meta-llama/Llama-2-7b-chat-hf,/data3/user/jin509/malicious-finetuning/experiments-back/default/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/checkpoint-7,,,,,,0,humaneval,2025-06-16T16:30:30.217913
+ptst_final,pending,,,,,meta-llama/Llama-2-7b-chat-hf,/data3/user/jin509/malicious-finetuning/experiments-back/ptst/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100,,,,,,0,humaneval,2025-06-16T16:30:30.222511

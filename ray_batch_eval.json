@@ -1,0 +1,32 @@
+[
+  {
+      "experiment_name": "bea_epoch10",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-back/bea/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/bea/checkpoint-70",
+      "checkpoint": 70,
+      "epoch": 10
+  },
+  {
+      "experiment_name": "default_epoch1",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-back/default/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/checkpoint-7",
+      "checkpoint": 7,
+      "epoch": 1
+  },
+  {
+      "experiment_name": "ptst_final",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-back/ptst/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100",
+      "checkpoint": "final",
+      "epoch": "final"
+  },
+  {
+      "experiment_name": "repnoise_pre_alignment_final",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-back/repnoise/pre_alignment_model/Llama-2-7b-chat-hf-lora-r64/benign50-harmful50-epoch2-rho0.001-lamb0.1",
+      "checkpoint": "final",
+      "epoch": "final"
+  }
+]
+
+

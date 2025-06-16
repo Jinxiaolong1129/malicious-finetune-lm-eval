@@ -1,0 +1,38 @@
+ray:
+  num_gpus: null  # null表示自动检测，也可以指定具体数量如8
+  init_config:    
+    object_store_memory: 4000000000  # 4GB（多任务需要更多内存）
+    # log_to_driver: false
+
+# 模型配置
+models:
+  # 基础模型
+  base_model: "meta-llama/Llama-2-7b-chat-hf"
+  
+  # LoRA模型列表
+  lora_models:
+    # 方式1: 简单路径字符串
+    - "/data3/user/jin509/malicious-finetuning/experiments/default/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100"
+    - "/data3/user/jin509/malicious-finetuning/experiments/lisa/gsm8k-BeaverTails-p0.2/Llama-2-7b-chat-hf-lora-r64-e10-b16-data100/lisa-finetune900-rho0.01-benign0.01-align100"
+
+  # # 方式3: 自动扫描目录
+  # scan_directories:
+  #   - "/path/to/lora_models_directory"
+
+# 评测配置
+evaluation:
+  tasks:
+    # - "mmlu"        # 自动使用 num_fewshot=5 (标准设置)
+    - "humaneval"   # 自动使用 num_fewshot=0 (标准设置)
+    # - "truthfulqa"  # 自动使用 num_fewshot=0 (标准设置)
+    
+    # 注意：这3个任务将在一次模型加载中全部完成
+    # 脚本会自动应用每个任务的最佳默认参数
+  
+  output_dir: "./optimized_results"
+  
+
+
+# CUDA_VISIBLE_DEVICES: "4,5,6,7"  # 指定使用的GPU设备
+
+# CUDA_VISIBLE_DEVICES="4,5,6,7" python ray_evaluation_optimized.py --config optimized_config.yaml
