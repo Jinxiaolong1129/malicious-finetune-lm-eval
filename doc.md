@@ -1,5 +1,10 @@
 # Ray批量评测脚本使用说明
 
+## 生成model_configs.json
+
+python generate_config.py --root_dir /data3/user/jin509/malicious-finetuning/experiments --output model_configs.json
+
+
 ## 配置文件示例 (model_configs_debug.json)
 
 ```json
