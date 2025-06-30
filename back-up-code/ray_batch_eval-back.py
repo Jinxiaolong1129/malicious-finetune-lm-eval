@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# ray_batch_eval_fixed.py - 修复Actor引用问题的Ray并行批量LoRA模型评测脚本
+# ray_batch_eval_simplified.py - 简化版Ray并行批量LoRA模型评测脚本（只追踪成功运行状态）
 
 import os
 import json
@@ -28,8 +28,8 @@ class ProgressTracker:
         self.lock = threading.Lock()
         self.csv_columns = [
             'experiment_name', 'status', 'start_time', 'end_time', 
-            'duration_minutes', 'score', 'base_model', 'lora_path', 
-            'output_file', 'log_file', 'error_message', 'worker_pid', 
+            'duration_minutes', 'base_model', 'lora_path', 
+            'log_file', 'error_message', 'worker_pid', 
             'gpu_id', 'retry_count', 'tasks', 'created_time'
         ]
         
@@ -75,7 +75,7 @@ class ProgressTracker:
             return {}
     
     def update_task_status(self, experiment_name: str, **kwargs):
-        """更新单个任务状态 - 修复数据类型警告"""
+        """更新单个任务状态"""
         with self.lock:
             try:
                 if self.progress_file.exists():
@@ -206,24 +206,16 @@ class ProgressTracker:
                 percentage = count / total * 100
                 print(f"   {status}: {count} ({percentage:.1f}%)")
             
-            completed_df = df[df['status'] == 'completed']
-            if not completed_df.empty and 'score' in completed_df.columns:
-                scores = pd.to_numeric(completed_df['score'], errors='coerce').dropna()
-                if not scores.empty:
-                    print(f"\n🏆 已完成任务分数统计:")
-                    print(f"   平均分: {scores.mean():.4f}")
-                    print(f"   最高分: {scores.max():.4f}")
-                    print(f"   最低分: {scores.min():.4f}")
+            # 显示最近的任务信息
+            if 'created_time' in df.columns:
+                recent_tasks = df.nlargest(5, 'created_time')
+                print(f"\n📝 最近5个任务:")
+                for _, row in recent_tasks.iterrows():
+                    print(f"   {row['experiment_name']}: {row['status']}")
                     
-                    top_3 = completed_df.nlargest(3, 'score')
-                    print(f"   📈 排行榜前3:")
-                    for i, (_, row) in enumerate(top_3.iterrows(), 1):
-                        score = pd.to_numeric(row['score'], errors='coerce')
-                        if pd.notna(score):
-                            print(f"     {i}. {row['experiment_name']}: {score:.4f}")
-            
         except Exception as e:
             print(f"⚠️  打印进度摘要失败: {e}")
+
 
 @ray.remote(num_gpus=1)
 class LoRAEvaluationWorker:
@@ -251,11 +243,9 @@ class LoRAEvaluationWorker:
                        experiment_name: str,
                        base_model: str, 
                        lora_path: str,
-                       output_dir: str,
-                       save_to_lora_path: bool = False,
                        tasks: str = "humaneval",
                        gpu_memory_utilization: float = 0.8) -> Dict[str, Any]:
-        """评测单个LoRA模型"""
+        """评测单个LoRA模型 - 简化版，只追踪运行状态"""
         start_time = time.time()
         start_time_str = datetime.now().isoformat()
         
@@ -266,35 +256,24 @@ class LoRAEvaluationWorker:
             print(f"📊 评测任务: {tasks}")
             print(f"🎯 使用GPU: {self.gpu_id}")
             
-            # 构建输出文件路径
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            # 构建输出文件路径 - 保存到LoRA目录
+            lora_dir = Path(lora_path)
+            log_dir = lora_dir / "log_lm_eval"
             
-            if save_to_lora_path:
-                lora_dir = Path(lora_path)
-                output_file = lora_dir / f"evaluation_{tasks}_{timestamp}.json"
-                log_dir = lora_dir / "log_lm_eval"
-                print(f"💾 输出将保存到LoRA目录: {output_file}")
-                print(f"📝 日志将保存到: {log_dir}")
-            else:
-                output_file = Path(output_dir) / f"{experiment_name}_{tasks}_{timestamp}.json"
-                log_dir = Path(output_dir) / "log_lm_eval"
-                print(f"💾 输出将保存到指定目录: {output_file}")
-                print(f"📝 日志将保存到: {log_dir}")
+            print(f"📝 日志保存到: {log_dir}")
             
             # 确保输出目录和日志目录存在
-            output_file.parent.mkdir(parents=True, exist_ok=True)
             log_dir.mkdir(parents=True, exist_ok=True)
             
-            # 构建日志文件路径
-            log_file = log_dir / f"{experiment_name}_{tasks}_{timestamp}.log"
+            log_file = log_dir / f"{experiment_name}_{tasks}.log"
             
             # 构建命令行参数
             cmd = [
                 self.sys.executable, "ray-run_evaluation.py",
                 "--base-model", base_model,
-                "--lora-path", lora_path,
+                "--lora-path", str(lora_dir),
                 "--tasks", tasks,
-                "--output", str(output_file),
+                "--output-path", str(lora_dir),
                 "--tensor-parallel-size", "1",
                 "--gpu-memory-utilization", str(gpu_memory_utilization),
             ]
@@ -351,19 +330,7 @@ class LoRAEvaluationWorker:
             if result.returncode == 0:
                 print(f"✅ [{experiment_name}] Worker {self.worker_pid} 评测成功完成")
                 print(f"⏱️  耗时: {duration:.2f}秒 ({duration_minutes:.2f}分钟)")
-                print(f"📄 输出文件: {output_file}")
                 print(f"📝 日志文件: {log_file}")
-                
-                # 尝试读取结果文件获取评测分数
-                score = None
-                try:
-                    if output_file.exists():
-                        with open(output_file, 'r', encoding='utf-8') as f:
-                            results = json.load(f)
-                            if 'results' in results and 'humaneval' in results['results']:
-                                score = results['results']['humaneval'].get('pass@1', 0.0)
-                except Exception as e:
-                    print(f"⚠️  [{experiment_name}] Worker {self.worker_pid} 读取结果文件失败: {e}")
                 
                 return {
                     "experiment_name": experiment_name,
@@ -372,9 +339,7 @@ class LoRAEvaluationWorker:
                     "end_time": end_time_str,
                     "duration": duration,
                     "duration_minutes": duration_minutes,
-                    "output_file": str(output_file),
                     "log_file": str(log_file),
-                    "score": score,
                     "stdout": brief_output,
                     "stderr": "",
                     "base_model": base_model,
@@ -397,7 +362,6 @@ class LoRAEvaluationWorker:
                     "duration": duration,
                     "duration_minutes": duration_minutes,
                     "error_code": result.returncode,
-                    "output_file": str(output_file),
                     "log_file": str(log_file),
                     "stdout": brief_output,
                     "stderr": "",
@@ -485,24 +449,16 @@ class LoRAEvaluationWorker:
 
 
 class BatchEvaluationManager:
-    """批量评测管理器 - 修复Actor引用问题"""
+    """批量评测管理器 - 简化版"""
     
     def __init__(self, 
                  config_file: str,
-                 output_dir: str = "./batch_evaluation_results",
                  tasks: str = "humaneval",
-                 save_to_lora_path: bool = False,
                  progress_file: str = "lm_eval_experiment_progress.csv"):
         self.config_file = config_file
-        self.output_dir = Path(output_dir)
         self.tasks = tasks
-        self.save_to_lora_path = save_to_lora_path
         
         self.progress_tracker = ProgressTracker(progress_file)
-        
-        if not self.save_to_lora_path:
-            self.output_dir.mkdir(parents=True, exist_ok=True)
-        
         self.all_experiments = self.load_config()
         
     def load_config(self) -> List[Dict[str, Any]]:
@@ -527,19 +483,18 @@ class BatchEvaluationManager:
                     print(f"⚠️  实验 '{exp['experiment_name']}' 的LoRA路径不存在: {exp['lora_path']}, 跳过")
                     continue
                 
-                if self.save_to_lora_path:
-                    lora_dir = Path(exp['lora_path'])
-                    if not lora_dir.is_dir():
-                        print(f"⚠️  实验 '{exp['experiment_name']}' 的LoRA路径不是目录: {exp['lora_path']}, 跳过")
-                        continue
-                    
-                    try:
-                        test_file = lora_dir / ".write_test"
-                        test_file.touch()
-                        test_file.unlink()
-                    except Exception:
-                        print(f"⚠️  实验 '{exp['experiment_name']}' 的LoRA目录无写入权限: {exp['lora_path']}, 跳过")
-                        continue
+                lora_dir = Path(exp['lora_path'])
+                if not lora_dir.is_dir():
+                    print(f"⚠️  实验 '{exp['experiment_name']}' 的LoRA路径不是目录: {exp['lora_path']}, 跳过")
+                    continue
+                
+                try:
+                    test_file = lora_dir / ".write_test"
+                    test_file.touch()
+                    test_file.unlink()
+                except Exception:
+                    print(f"⚠️  实验 '{exp['experiment_name']}' 的LoRA目录无写入权限: {exp['lora_path']}, 跳过")
+                    continue
                 
                 valid_experiments.append(exp)
             
@@ -553,7 +508,7 @@ class BatchEvaluationManager:
     def run_batch_evaluation(self, 
                            force_rerun: bool = False,
                            retry_failed_only: bool = False) -> List[Dict[str, Any]]:
-        """运行批量评测 - 修复Actor引用问题"""
+        """运行批量评测"""
         if not self.all_experiments:
             print("⚠️  没有有效的实验配置")
             return []
@@ -573,12 +528,7 @@ class BatchEvaluationManager:
         print(f"🔢 待执行实验数量: {len(pending_experiments)}")
         print(f"🎯 每个任务使用 1 GPU")
         print(f"🤖 Ray将自动管理GPU资源调度")
-        
-        if self.save_to_lora_path:
-            print(f"💾 输出模式: 保存到各自的LoRA目录")
-        else:
-            print(f"💾 输出目录: {self.output_dir}")
-        
+        print(f"💾 输出模式: 保存到各自的LoRA目录")
         print(f"📊 进度文件: {self.progress_tracker.progress_file}")
         print(f"{'='*80}")
         
@@ -595,7 +545,7 @@ class BatchEvaluationManager:
                 retry_count=0
             )
         
-        # 修复：创建持久的Actor引用
+        # 创建持久的Actor引用
         print(f"🔧 创建 {len(pending_experiments)} 个Worker Actor...")
         workers = []
         futures = []
@@ -618,8 +568,6 @@ class BatchEvaluationManager:
                 experiment_name=exp['experiment_name'],
                 base_model=exp['base_model'],
                 lora_path=exp['lora_path'],
-                output_dir=str(self.output_dir),
-                save_to_lora_path=self.save_to_lora_path,
                 tasks=self.tasks
             )
             
@@ -666,8 +614,6 @@ class BatchEvaluationManager:
                         status=result['status'],
                         end_time=result.get('end_time', datetime.now().isoformat()),
                         duration_minutes=result.get('duration_minutes', 0),
-                        score=result.get('score'),
-                        output_file=result.get('output_file', ''),
                         log_file=result.get('log_file', ''),
                         error_message=result.get('error_message', ''),
                         worker_pid=result.get('worker_pid'),
@@ -676,9 +622,8 @@ class BatchEvaluationManager:
                     
                     # 打印完成信息
                     status_emoji = "✅" if result['status'] == 'completed' else "❌"
-                    score_info = f" (分数: {result.get('score', 'N/A')})" if result.get('score') is not None else ""
                     duration_info = f" [{result.get('duration_minutes', 0):.1f}分钟]"
-                    print(f"{status_emoji} {result['experiment_name']}{score_info}{duration_info}")
+                    print(f"{status_emoji} {result['experiment_name']}{duration_info}")
                     
                     # 任务完成后清理worker
                     if worker:
@@ -742,19 +687,15 @@ class BatchEvaluationManager:
             print(f"📈 成功率: {len(successful)/len(completed_results)*100:.1f}%")
         print(f"📊 进度文件: {self.progress_tracker.progress_file}")
         
-        # 显示成功任务的分数
+        # 显示成功任务的执行时间
         if successful:
-            print(f"\n🏆 成功任务分数排行:")
-            successful_with_scores = [r for r in successful if r.get('score') is not None]
-            if successful_with_scores:
-                successful_with_scores.sort(key=lambda x: x['score'], reverse=True)
-                
-                for i, result in enumerate(successful_with_scores[:10], 1):  # 显示前10名
-                    worker_info = f"(Worker {result.get('worker_pid', 'N/A')}, GPU {result.get('gpu_id', 'N/A')})"
-                    duration_info = f"[{result.get('duration_minutes', 0):.1f}min]"
-                    print(f"  {i:2d}. {result['experiment_name']:<25}: {result['score']:.4f} {duration_info} {worker_info}")
-            else:
-                print("  (没有获取到分数信息)")
+            print(f"\n🏆 成功任务执行时间:")
+            successful_sorted = sorted(successful, key=lambda x: x.get('duration_minutes', 0))
+            
+            for i, result in enumerate(successful_sorted[:10], 1):  # 显示前10名
+                worker_info = f"(Worker {result.get('worker_pid', 'N/A')}, GPU {result.get('gpu_id', 'N/A')})"
+                duration_info = f"[{result.get('duration_minutes', 0):.1f}min]"
+                print(f"  {i:2d}. {result['experiment_name']:<25}: {duration_info} {worker_info}")
         
         # 显示失败任务
         if failed:
@@ -766,13 +707,9 @@ class BatchEvaluationManager:
                 print(f"  - {result['experiment_name']}: {result['status']} - {error_msg} {duration_info} ({worker_info})")
         
         # 保存详细结果到汇总目录
-        if self.save_to_lora_path:
-            # 即使个别结果保存在各自目录，汇总还是保存在统一位置
-            summary_dir = Path("./batch_evaluation_summaries")
-            summary_dir.mkdir(parents=True, exist_ok=True)
-            self.save_batch_results(completed_results, total_duration, summary_dir)
-        else:
-            self.save_batch_results(completed_results, total_duration, self.output_dir)
+        summary_dir = Path("./batch_evaluation_summaries")
+        summary_dir.mkdir(parents=True, exist_ok=True)
+        self.save_batch_results(completed_results, total_duration, summary_dir)
         
         # 最后再次显示进度摘要
         print(f"\n📊 最终进度摘要:")
@@ -780,11 +717,8 @@ class BatchEvaluationManager:
         
         return completed_results
     
-    def save_batch_results(self, results: List[Dict[str, Any]], total_duration: float, summary_dir: Path = None):
+    def save_batch_results(self, results: List[Dict[str, Any]], total_duration: float, summary_dir: Path):
         """保存批量评测结果"""
-        if summary_dir is None:
-            summary_dir = self.output_dir
-            
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         summary_file = summary_dir / f"batch_evaluation_summary_{timestamp}.json"
         
@@ -796,8 +730,7 @@ class BatchEvaluationManager:
             "pending_experiments": len(results) if results else 0,
             "total_duration_seconds": total_duration,
             "total_duration_minutes": total_duration / 60,
-            "save_to_lora_path": self.save_to_lora_path,
-            "output_mode": "lora_directories" if self.save_to_lora_path else "centralized_directory",
+            "output_mode": "lora_directories",
             "scheduling_mode": "ray_auto_scheduling",
             "progress_file": str(self.progress_tracker.progress_file),
             "results_summary": {
@@ -819,14 +752,10 @@ class BatchEvaluationManager:
 
 def create_parser():
     """创建命令行参数解析器"""
-    parser = argparse.ArgumentParser(description="修复版Ray并行批量LoRA模型评测脚本")
+    parser = argparse.ArgumentParser(description="简化版Ray并行批量LoRA模型评测脚本")
     
     parser.add_argument("--config", type=str, required=True,
                         help="实验配置JSON文件路径")
-    parser.add_argument("--output-dir", type=str, default="./batch_evaluation_results",
-                        help="输出目录 (当--save-to-lora-path=False时使用)")
-    parser.add_argument("--save-to-lora-path", action="store_true",
-                        help="将评测结果保存到各自的lora_path目录下，而不是统一的output-dir")
     parser.add_argument("--tasks", type=str, default="humaneval",
                         help="评测任务")
     parser.add_argument("--ray-address", type=str, default=None,
@@ -847,16 +776,11 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
     
-    print("🚀 修复版Ray并行批量LoRA模型评测系统")
+    print("🚀 简化版Ray并行批量LoRA模型评测系统")
     print(f"📁 配置文件: {args.config}")
     print(f"📊 评测任务: {args.tasks}")
     print(f"📊 进度文件: {args.progress_file}")
-    
-    if args.save_to_lora_path:
-        print(f"💾 输出模式: 保存到各自的LoRA目录")
-        print(f"📄 汇总文件: ./batch_evaluation_summaries/")
-    else:
-        print(f"💾 输出目录: {args.output_dir}")
+    print(f"💾 输出模式: 保存到各自的LoRA目录 (默认)")
     
     if args.force_rerun:
         print(f"🔄 运行模式: 强制重跑所有任务")
@@ -867,7 +791,7 @@ def main():
     
     print(f"🤖 调度模式: Ray自动资源管理")
     print(f"🎯 每任务GPU数: 1")
-    print(f"🔧 修复内容: Actor引用管理 + 数据类型警告")
+    print(f"🔧 特性: 简化版本，只追踪运行状态")
     
     # 如果只是查看进度，不需要初始化Ray
     if args.show_progress:
@@ -888,9 +812,7 @@ def main():
         # 创建批量评测管理器
         manager = BatchEvaluationManager(
             config_file=args.config,
-            output_dir=args.output_dir,
             tasks=args.tasks,
-            save_to_lora_path=args.save_to_lora_path,
             progress_file=args.progress_file
         )
         
@@ -902,6 +824,7 @@ def main():
         
         print(f"\n🎉 所有任务处理完成!")
         print(f"📊 进度文件: {args.progress_file}")
+        print(f"📄 汇总文件: ./batch_evaluation_summaries/")
         print(f"💡 提示: 使用 --show-progress 可以随时查看进度")
         print(f"💡 提示: 使用 --retry-failed-only 可以只重跑失败的任务")
         

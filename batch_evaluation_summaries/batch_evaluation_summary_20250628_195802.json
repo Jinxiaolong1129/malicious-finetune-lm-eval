@@ -1,0 +1,197 @@
+{
+  "evaluation_time": "2025-06-28T19:58:02.036292",
+  "config_file": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/lm_eval_model_configs_final.json",
+  "tasks": "all",
+  "num_gpus_per_task": 1,
+  "tensor_parallel_size": 1,
+  "total_experiments": 8,
+  "pending_experiments": 8,
+  "total_duration_seconds": 2287.0345726013184,
+  "total_duration_minutes": 38.11724287668864,
+  "output_mode": "lora_directories",
+  "scheduling_mode": "ray_auto_scheduling",
+  "progress_file": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/lm_eval_progress.csv",
+  "results_summary": {
+    "successful": 8,
+    "failed": 0,
+    "success_rate": 100.0
+  },
+  "detailed_results": [
+    {
+      "experiment_name": "constrain_sft_final",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/constrain_sft/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/sftsoft_sft",
+      "status": "completed",
+      "start_time": "2025-06-28T19:19:57.335881",
+      "end_time": "2025-06-28T19:32:19.798004",
+      "duration": 742.4621291160583,
+      "duration_minutes": 12.374368818600972,
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/constrain_sft/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/sftsoft_sft/log_lm_eval/constrain_sft_final_all_gpu1.log",
+      "stdout": "in __init__\n    super().__init__(input_size=input_size,\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 287, in __init__\n    self.quant_method.create_weights(\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 109, in create_weights\n    weight = Parameter(torch.empty(sum(output_partition_sizes),\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/torch/utils/_device.py\", line 78, in __torch_function__\n    return func(*args, **kwargs)\ntorch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-sft_stage/constrain_sft/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/merged_lora_blhftx7d\n✅ 临时文件清理完成\n❌ 多任务评测流程失败: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "tasks": "all",
+      "worker_pid": "2727036",
+      "gpu_id": "0",
+      "num_gpus_used": 1,
+      "visible_gpus": [
+        0
+      ],
+      "tensor_parallel_size": 1,
+      "error_message": ""
+    },
+    {
+      "experiment_name": "bea_final",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/bea",
+      "status": "completed",
+      "start_time": "2025-06-28T19:19:57.456747",
+      "end_time": "2025-06-28T19:33:16.353858",
+      "duration": 798.8971061706543,
+      "duration_minutes": 13.314951769510905,
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/bea/log_lm_eval/bea_final_all_gpu1.log",
+      "stdout": "line 549, in __init__\n    super().__init__(input_size=input_size,\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 287, in __init__\n    self.quant_method.create_weights(\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 109, in create_weights\n    weight = Parameter(torch.empty(sum(output_partition_sizes),\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/torch/utils/_device.py\", line 78, in __torch_function__\n    return func(*args, **kwargs)\ntorch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-sft_stage/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/merged_lora_nj3cvkgj\n✅ 临时文件清理完成\n❌ 多任务评测流程失败: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "tasks": "all",
+      "worker_pid": "2727035",
+      "gpu_id": "0",
+      "num_gpus_used": 1,
+      "visible_gpus": [
+        0
+      ],
+      "tensor_parallel_size": 1,
+      "error_message": ""
+    },
+    {
+      "experiment_name": "bea_final",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/bea",
+      "status": "completed",
+      "start_time": "2025-06-28T19:19:57.492655",
+      "end_time": "2025-06-28T19:33:53.280932",
+      "duration": 835.7882733345032,
+      "duration_minutes": 13.929804555575053,
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/bea/log_lm_eval/bea_final_all_gpu1.log",
+      "stdout": "near.py\", line 549, in __init__\n    super().__init__(input_size=input_size,\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 287, in __init__\n    self.quant_method.create_weights(\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 109, in create_weights\n    weight = Parameter(torch.empty(sum(output_partition_sizes),\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/torch/utils/_device.py\", line 78, in __torch_function__\n    return func(*args, **kwargs)\ntorch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-sft_stage/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/merged_lora_kht9ayxg\n✅ 临时文件清理完成\n❌ 多任务评测流程失败: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "tasks": "all",
+      "worker_pid": "2727034",
+      "gpu_id": "0",
+      "num_gpus_used": 1,
+      "visible_gpus": [
+        0
+      ],
+      "tensor_parallel_size": 1,
+      "error_message": ""
+    },
+    {
+      "experiment_name": "constrain_sft_final",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/constrain_sft/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/sftsoft_sft",
+      "status": "completed",
+      "start_time": "2025-06-28T19:32:21.997158",
+      "end_time": "2025-06-28T19:43:38.068480",
+      "duration": 676.0712630748749,
+      "duration_minutes": 11.267854384581248,
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/constrain_sft/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/sftsoft_sft/log_lm_eval/constrain_sft_final_all_gpu1.log",
+      "stdout": "line 549, in __init__\n    super().__init__(input_size=input_size,\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 287, in __init__\n    self.quant_method.create_weights(\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 109, in create_weights\n    weight = Parameter(torch.empty(sum(output_partition_sizes),\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/torch/utils/_device.py\", line 78, in __torch_function__\n    return func(*args, **kwargs)\ntorch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-sft_stage/constrain_sft/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/merged_lora_pge3lcxp\n✅ 临时文件清理完成\n❌ 多任务评测流程失败: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "tasks": "all",
+      "worker_pid": "2727043",
+      "gpu_id": "0",
+      "num_gpus_used": 1,
+      "visible_gpus": [
+        0
+      ],
+      "tensor_parallel_size": 1,
+      "error_message": ""
+    },
+    {
+      "experiment_name": "default_final",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/default/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3",
+      "status": "completed",
+      "start_time": "2025-06-28T19:33:19.239246",
+      "end_time": "2025-06-28T19:44:29.810798",
+      "duration": 670.5715224742889,
+      "duration_minutes": 11.17619204123815,
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/default/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/log_lm_eval/default_final_all_gpu1.log",
+      "stdout": "etune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 549, in __init__\n    super().__init__(input_size=input_size,\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 287, in __init__\n    self.quant_method.create_weights(\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 109, in create_weights\n    weight = Parameter(torch.empty(sum(output_partition_sizes),\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/torch/utils/_device.py\", line 78, in __torch_function__\n    return func(*args, **kwargs)\ntorch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-sft_stage/default/gsm8k-BeaverTails-p0.6/merged_lora_2l_r0u33\n✅ 临时文件清理完成\n❌ 多任务评测流程失败: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "tasks": "all",
+      "worker_pid": "2727037",
+      "gpu_id": "0",
+      "num_gpus_used": 1,
+      "visible_gpus": [
+        0
+      ],
+      "tensor_parallel_size": 1,
+      "error_message": ""
+    },
+    {
+      "experiment_name": "lisa_final",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/lisa/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/lisa-finetune900-rho1-benign10000-align100",
+      "status": "completed",
+      "start_time": "2025-06-28T19:44:32.469916",
+      "end_time": "2025-06-28T19:56:24.901129",
+      "duration": 712.4311769008636,
+      "duration_minutes": 11.873852948347727,
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/lisa/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/lisa-finetune900-rho1-benign10000-align100/log_lm_eval/lisa_final_all_gpu1.log",
+      "stdout": "ine 549, in __init__\n    super().__init__(input_size=input_size,\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 287, in __init__\n    self.quant_method.create_weights(\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 109, in create_weights\n    weight = Parameter(torch.empty(sum(output_partition_sizes),\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/torch/utils/_device.py\", line 78, in __torch_function__\n    return func(*args, **kwargs)\ntorch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-sft_stage/lisa/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/merged_lora_e2vt55cm\n✅ 临时文件清理完成\n❌ 多任务评测流程失败: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "tasks": "all",
+      "worker_pid": "2727038",
+      "gpu_id": "0",
+      "num_gpus_used": 1,
+      "visible_gpus": [
+        0
+      ],
+      "tensor_parallel_size": 1,
+      "error_message": ""
+    },
+    {
+      "experiment_name": "lisa_final",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/lisa/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/lisa-finetune900-rho1-benign10000-align100",
+      "status": "completed",
+      "start_time": "2025-06-28T19:44:32.557725",
+      "end_time": "2025-06-28T19:57:58.514779",
+      "duration": 805.9570004940033,
+      "duration_minutes": 13.432616674900055,
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/lisa/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/lisa-finetune900-rho1-benign10000-align100/log_lm_eval/lisa_final_all_gpu1.log",
+      "stdout": "ear.py\", line 549, in __init__\n    super().__init__(input_size=input_size,\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 287, in __init__\n    self.quant_method.create_weights(\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 109, in create_weights\n    weight = Parameter(torch.empty(sum(output_partition_sizes),\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/torch/utils/_device.py\", line 78, in __torch_function__\n    return func(*args, **kwargs)\ntorch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-sft_stage/lisa/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/merged_lora_j310_h95\n✅ 临时文件清理完成\n❌ 多任务评测流程失败: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "tasks": "all",
+      "worker_pid": "2727040",
+      "gpu_id": "0",
+      "num_gpus_used": 1,
+      "visible_gpus": [
+        0
+      ],
+      "tensor_parallel_size": 1,
+      "error_message": ""
+    },
+    {
+      "experiment_name": "default_final",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/default/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca",
+      "status": "completed",
+      "start_time": "2025-06-28T19:44:32.427029",
+      "end_time": "2025-06-28T19:58:02.013959",
+      "duration": 809.586905002594,
+      "duration_minutes": 13.493115083376567,
+      "log_file": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/default/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/log_lm_eval/default_final_all_gpu1.log",
+      "stdout": "etune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 549, in __init__\n    super().__init__(input_size=input_size,\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 287, in __init__\n    self.quant_method.create_weights(\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/vllm/model_executor/layers/linear.py\", line 109, in create_weights\n    weight = Parameter(torch.empty(sum(output_partition_sizes),\n  File \"/home/jin509/anaconda3/envs/malicious_finetune/lib/python3.10/site-packages/torch/utils/_device.py\", line 78, in __torch_function__\n    return func(*args, **kwargs)\ntorch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n🧹 步骤6: 清理临时文件 /data3/user/jin509/malicious-finetuning/experiments-sft_stage/default/gsm8k-BeaverTails-p0.6/merged_lora_4q5eou5y\n✅ 临时文件清理完成\n❌ 多任务评测流程失败: CUDA out of memory. Tried to allocate 96.00 MiB. GPU \n",
+      "stderr": "",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "tasks": "all",
+      "worker_pid": "2727041",
+      "gpu_id": "0",
+      "num_gpus_used": 1,
+      "visible_gpus": [
+        0
+      ],
+      "tensor_parallel_size": 1,
+      "error_message": ""
+    }
+  ]
+}

@@ -1,5 +1,11 @@
 # Ray批量评测脚本使用说明
 
+### 环境准备
+```bash
+export HF_HOME=/path/to/your/local/hf_cache
+# 下载数据集和model到这里，lm-eval会自动使用
+```
+
 ## 生成model_configs.json
 
 python generate_config.py --root_dir /data3/user/jin509/malicious-finetuning/experiments --output model_configs.json

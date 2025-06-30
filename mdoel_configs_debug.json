@@ -1,0 +1,16 @@
+[
+    {
+      "experiment_name": "bea_final",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/bea",
+      "checkpoint": "final",
+      "epoch": "final"
+    },
+    {
+      "experiment_name": "bea_final",
+      "base_model": "meta-llama/Llama-2-7b-chat-hf",
+      "lora_path": "/data3/user/jin509/malicious-finetuning/experiments-sft_stage/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/bea",
+      "checkpoint": "final",
+      "epoch": "final"
+    }
+]

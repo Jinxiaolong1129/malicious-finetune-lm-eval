@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# ray-run_evaluation.py - 优化版：支持多任务一次加载 + GSM8K
+# ray-run_evaluation.py 
 
 import os
 os.environ['VLLM_WORKER_MULTIPROC_METHOD'] = 'spawn'
@@ -104,16 +104,16 @@ class OptimizedLoRAEvaluator:
         print(f"🧠 GPU Memory Utilization: {gpu_memory_utilization}")
         print(f"💡 优势: 模型只加载一次，评测{len(tasks)}个任务")
         
-        # 任务特定的默认参数 - 修正版 + GSM8K
+        # 任务特定的默认参数 
         task_defaults = {
-            "mmlu": {"num_fewshot": 5, "batch_size": "auto"},
+            "mmlu": {"num_fewshot": 0, "batch_size": "auto"},
             "humaneval": {"num_fewshot": 0, "batch_size": "auto"},  
-            "gsm8k": {"num_fewshot": 0, "batch_size": "auto"},  # 新增 GSM8K
+            "gsm8k": {"num_fewshot": 0, "batch_size": "auto"},
             "truthfulqa_mc1": {"num_fewshot": 0, "batch_size": "auto"},
             "truthfulqa_mc2": {"num_fewshot": 0, "batch_size": "auto"},
         }
         
-        # 标准化任务名称 - 修正版 + GSM8K
+        # 标准化任务名称
         normalized_tasks = []
         has_unsafe_tasks = False
         
@@ -247,14 +247,17 @@ class OptimizedLoRAEvaluator:
         else:
             print("ℹ️  没有需要清理的临时文件")
     
-    def save_results(self, output_file):
-        """保存多任务评测结果到指定文件"""
+    def save_results(self, output_path):
+        """保存每个任务的结果到单独的文件"""
         if self.results is None:
             print("⚠️  没有评测结果可保存")
             return
         
         try:
-            print(f"💾 保存多任务结果到: {output_file}")
+            # 确保输出目录存在
+            output_dir = Path(output_path)
+            output_dir.mkdir(parents=True, exist_ok=True)
+            print(f"💾 保存结果到目录: {output_dir}")
             
             # 处理 samples 数据
             samples = None
@@ -262,65 +265,71 @@ class OptimizedLoRAEvaluator:
             if self.log_samples and "samples" in results_copy:
                 samples = results_copy.pop("samples")
             
-            # 计算任务哈希值
-            task_hashes = {}
-            if samples:
-                for task_name, task_samples in samples.items():
-                    sample_hashes = [
-                        s["doc_hash"] + s["prompt_hash"] + s["target_hash"]
-                        for s in task_samples
-                    ]
-                    task_hashes[task_name] = hash_string("".join(sample_hashes))
-            
-            # 更新结果字典
-            results_copy.update({"task_hashes": task_hashes})
-            
             # 添加时间戳和元信息
             from datetime import datetime
             date_id = datetime.now().isoformat().replace(":", "-")
             
-            # 收集评测的任务列表
-            evaluated_tasks = list(results_copy.get("results", {}).keys())
+            # 获取评测结果
+            task_results = results_copy.get("results", {})
             
-            results_copy.update({
-                "evaluation_time": date_id,
-                "evaluation_mode": "multi_task_single_load",
-                "tasks_evaluated": evaluated_tasks,
-                "task_count": len(evaluated_tasks),
-                "lora_path": self.lora_path,
-                "base_model": self.base_model_name
-            })
-            
-            # 序列化结果
-            dumped = json.dumps(
-                results_copy, 
-                indent=2, 
-                default=handle_non_serializable, 
-                ensure_ascii=False
-            )
-            
-            # 确保输出目录存在
-            output_path = Path(output_file)
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # 写入文件
-            with open(output_path, "w", encoding="utf-8") as f:
-                f.write(dumped)
-            
-            print(f"✅ 多任务结果已保存到: {output_path}")
-            
-            # 如果需要保存 samples 数据，单独保存
-            if samples:
-                samples_file = output_path.with_name(f"{output_path.stem}_samples.json")
-                samples_dumped = json.dumps(
-                    samples, 
+            # 为每个任务保存单独的文件
+            for task_name, task_result in task_results.items():
+                print(f"💾 保存任务 {task_name} 的结果...")
+                
+                # 计算任务哈希值
+                task_hash = ""
+                if samples and task_name in samples:
+                    task_samples = samples[task_name]
+                    sample_hashes = [
+                        s["doc_hash"] + s["prompt_hash"] + s["target_hash"]
+                        for s in task_samples
+                    ]
+                    task_hash = hash_string("".join(sample_hashes))
+                
+                # 构建单个任务的结果字典
+                single_task_result = {
+                    "results": {task_name: task_result},
+                    "task_hashes": {task_name: task_hash},
+                    "evaluation_time": date_id,
+                    "evaluation_mode": "multi_task_single_load",
+                    "task_name": task_name,
+                    "lora_path": self.lora_path,
+                    "base_model": self.base_model_name
+                }
+                
+                # 复制其他元数据（排除results和samples）
+                for key, value in results_copy.items():
+                    if key not in ["results", "task_hashes"]:
+                        single_task_result[key] = value
+                
+                # 保存主要结果文件
+                results_file = output_dir / f"lm_eval_{task_name}_results.json"
+                dumped = json.dumps(
+                    single_task_result, 
                     indent=2, 
                     default=handle_non_serializable, 
                     ensure_ascii=False
                 )
-                with open(samples_file, "w", encoding="utf-8") as f:
-                    f.write(samples_dumped)
-                print(f"✅ 样本数据已保存到: {samples_file}")
+                
+                with open(results_file, "w", encoding="utf-8") as f:
+                    f.write(dumped)
+                print(f"✅ {task_name} 结果已保存到: {results_file}")
+                
+                # 保存样本数据（如果存在）
+                if samples and task_name in samples:
+                    samples_file = output_dir / f"lm_eval_{task_name}_results_samples.json"
+                    task_samples = {task_name: samples[task_name]}
+                    samples_dumped = json.dumps(
+                        task_samples, 
+                        indent=2, 
+                        default=handle_non_serializable, 
+                        ensure_ascii=False
+                    )
+                    with open(samples_file, "w", encoding="utf-8") as f:
+                        f.write(samples_dumped)
+                    print(f"✅ {task_name} 样本数据已保存到: {samples_file}")
+            
+            print(f"✅ 所有任务结果已保存完毕")
             
             # 打印结果表格
             print(f"\n📊 详细评测结果:")
@@ -331,73 +340,8 @@ class OptimizedLoRAEvaluator:
             import traceback
             traceback.print_exc()
             
-    def print_summary(self):
-        """打印多任务评测结果摘要"""
-        if not self.results:
-            print("⚠️  没有评测结果")
-            return
-        
-        print(f"\n{'='*80}")
-        print("📊 多任务评测结果摘要")
-        print(f"{'='*80}")
-        
-        # 收集所有任务的准确率
-        task_results = []
-        all_accuracies = []
-        
-        results_dict = self.results.get("results", {})
-        
-        for task_name, task_result in results_dict.items():
-            # 尝试获取不同类型的准确率指标
-            acc = (task_result.get("acc") or 
-                   task_result.get("acc_norm") or 
-                   task_result.get("exact_match") or 
-                   task_result.get("pass@1") or 
-                   0.0)
-            
-            task_results.append((task_name, acc))
-            all_accuracies.append(acc)
-        
-        # 按准确率排序
-        task_results.sort(key=lambda x: x[1], reverse=True)
-        
-        # 计算总体统计
-        if all_accuracies:
-            avg_acc = sum(all_accuracies) / len(all_accuracies)
-            print(f"\n🎯 总体表现:")
-            print(f"  评测任务数: {len(all_accuracies)}")
-            print(f"  平均准确率: {avg_acc:.4f}")
-            print(f"  最高准确率: {max(all_accuracies):.4f}")
-            print(f"  最低准确率: {min(all_accuracies):.4f}")
-            print(f"  标准差: {(sum((x - avg_acc) ** 2 for x in all_accuracies) / len(all_accuracies)) ** 0.5:.4f}")
-        
-        # 显示各任务详细结果
-        print(f"\n📋 各任务详细结果 (按准确率排序):")
-        print("-" * 80)
-        for task_name, acc in task_results:
-            # 移除前缀让显示更简洁
-            display_name = task_name.replace("mmlu_", "").replace("truthfulqa_", "")
-            
-            # 根据任务类型显示不同的指标名称
-            if "humaneval" in task_name.lower():
-                metric_name = "Pass@1"
-            elif "gsm8k" in task_name.lower():  # 新增 GSM8K 指标名称
-                metric_name = "Accuracy"
-            elif "truthful" in task_name.lower():
-                metric_name = "Accuracy"
-            else:
-                metric_name = "Accuracy"
-            
-            print(f"  {display_name:<45}: {acc:.4f} ({metric_name})")
-        
-        # 显示效率提升信息
-        task_count = len(task_results)
-        print(f"\n⚡ 效率提升:")
-        print(f"  单次加载评测 {task_count} 个任务")
-        print(f"  相比单任务模式提升约 {task_count}x 效率")
-        print(f"  节省了 {task_count - 1} 次模型加载时间")
-    
-    def run_full_pipeline(self, tasks=["mmlu"], output_file=None, **eval_kwargs):
+
+    def run_full_pipeline(self, tasks=["mmlu"], output_path=None, **eval_kwargs):
         """运行完整的多任务评测流程：合并-评测-清理"""
         try:
             print(f"🚀 启动多任务评测流程")
@@ -410,11 +354,8 @@ class OptimizedLoRAEvaluator:
             self.evaluate_multiple_tasks(tasks=tasks, **eval_kwargs)
             
             # 保存结果
-            if output_file:
-                self.save_results(output_file)
-            
-            # 打印摘要
-            self.print_summary()
+            if output_path:
+                self.save_results(output_path)
             
             return self.results
             
@@ -432,7 +373,9 @@ def parse_tasks(tasks_str):
     
     for task in tasks:
         if task.lower() == "all":
-            normalized_tasks.extend(["mmlu", "humaneval", "gsm8k", "truthfulqa_mc1", "truthfulqa_mc2"])  # 新增 GSM8K
+            # BUG
+            normalized_tasks.extend(["humaneval", "gsm8k", "truthfulqa_mc1", "truthfulqa_mc2"])  # 新增 GSM8K
+            # normalized_tasks.extend(["mmlu", "humaneval", "gsm8k", "truthfulqa_mc1", "truthfulqa_mc2"])  # 新增 GSM8K
         elif task.lower() == "truthful":  # 简化输入
             normalized_tasks.extend(["truthfulqa_mc1", "truthfulqa_mc2"])
         elif task.lower() == "gsm8k":  # 新增 GSM8K 支持
@@ -452,8 +395,8 @@ def create_parser():
                         help="LoRA模型路径")
     parser.add_argument("--tasks", type=str, default="humaneval",
                         help="评测任务，支持逗号分隔多个任务，如: mmlu,humaneval,gsm8k,truthfulqa")
-    parser.add_argument("--output", type=str, required=True,
-                        help="输出文件路径")
+    parser.add_argument("--output-path", type=str, required=True,
+                        help="输出目录路径")
     parser.add_argument("--tensor-parallel-size", type=int, default=1,
                         help="vLLM tensor parallel size")
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.7,
@@ -477,7 +420,7 @@ def main():
     print(f"📊 评测任务: {', '.join(tasks)} (共{len(tasks)}个)")
     print(f"⚡ Tensor Parallel: {args.tensor_parallel_size}")
     print(f"🧠 GPU内存使用率: {args.gpu_memory_utilization}")
-    print(f"💾 输出文件: {args.output}")
+    print(f"💾 输出目录: {args.output_path}")
     print(f"💡 优化模式: 一次加载评测{len(tasks)}个任务")
     
     # 特别提示 GSM8K
@@ -502,7 +445,7 @@ def main():
     try:
         results = evaluator.run_full_pipeline(
             tasks=tasks,
-            output_file=args.output,
+            output_path=args.output_path,
             **eval_kwargs
         )
         
@@ -511,6 +454,7 @@ def main():
         if "gsm8k" in tasks:
             print(f"🧮 GSM8K 数学推理评测已完成")
         print(f"⚡ 效率提升: 相比单任务模式快约 {len(tasks)} 倍")
+        print(f"📁 结果文件保存在: {args.output_path}")
         return results
         
     except Exception as e:
