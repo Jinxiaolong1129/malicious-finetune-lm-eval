@@ -9,42 +9,104 @@ os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
 
 import argparse
+import shutil
 import json
+import tempfile
 from pathlib import Path
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
 from lm_eval import simple_evaluate
 from lm_eval.utils import (
     handle_non_serializable,
     make_table,
+    simple_parse_args_string,
+)
+from lm_eval.loggers import EvaluationTracker
+from lm_eval.utils import (
+    get_file_datetime,
+    get_file_task_name,
+    get_results_filenames,
+    get_sample_results_filenames,
+    handle_non_serializable,
     hash_string,
+    sanitize_list,
+    sanitize_model_name,
+    sanitize_task_name,
 )
 
 class OptimizedLoRAEvaluator:
-    """优化的LoRA模型评测器：使用vLLM直接支持LoRA"""
+    """优化的LoRA模型评测器：支持多任务一次加载"""
     
-    def __init__(self, base_model_name, lora_path, max_lora_rank=64):
+    def __init__(self, base_model_name, lora_path):
         self.base_model_name = base_model_name
         self.lora_path = lora_path
-        self.max_lora_rank = max_lora_rank
+        self.merged_path = None
         self.results = None
         self.log_samples = True
         
+    def merge_lora(self, temp_dir=None):
+        """合并 LoRA 权重到临时目录"""
+        if temp_dir is None:
+            # 在 lora_path 下创建临时目录
+            lora_parent_dir = Path(self.lora_path).parent
+            temp_dir = tempfile.mkdtemp(prefix="merged_lora_", dir=str(lora_parent_dir))
+        
+        self.merged_path = temp_dir
+        
+        print(f"🔄 步骤1: 加载基础模型 {self.base_model_name}")
+        base_model = AutoModelForCausalLM.from_pretrained(
+            self.base_model_name,
+            torch_dtype=torch.float16,
+            device_map="auto",
+            trust_remote_code=True
+        )
+        
+        print(f"🔄 步骤2: 加载 LoRA 适配器 {self.lora_path}")
+        model = PeftModel.from_pretrained(base_model, self.lora_path)
+        
+        print(f"🔄 步骤3: 合并 LoRA 权重")
+        merged_model = model.merge_and_unload()
+        
+        print(f"🔄 步骤4: 保存到临时目录 {self.merged_path}")
+        os.makedirs(self.merged_path, exist_ok=True)
+        
+        # 保存模型
+        merged_model.save_pretrained(
+            self.merged_path,
+            safe_serialization=True,
+            max_shard_size="2GB"
+        )
+        
+        # 保存 tokenizer
+        tokenizer = AutoTokenizer.from_pretrained(self.base_model_name)
+        tokenizer.save_pretrained(self.merged_path)
+        
+        # 清理内存
+        del base_model, model, merged_model, tokenizer
+        torch.cuda.empty_cache()
+        
+        print(f"✅ 模型合并完成，临时保存在: {self.merged_path}")
+        return self.merged_path
+    
     def evaluate_multiple_tasks(self, 
                                tasks=["humaneval"], 
                                tensor_parallel_size=1, 
                                gpu_memory_utilization=0.8,
                                **eval_kwargs):
-        """使用 vLLM 直接支持LoRA评测多任务"""
+        """使用 vLLM 评测多个任务 - 修正版 + GSM8K + ARC Challenge 支持"""
+        if not self.merged_path or not os.path.exists(self.merged_path):
+            raise ValueError("请先调用 merge_lora() 合并模型")
         
-        print(f"\n🚀 开始使用vLLM直接LoRA支持进行多任务评测...")
+        print(f"\n🚀 步骤5: 使用 vLLM 开始多任务评测...")
         print(f"📊 评测任务: {', '.join(tasks)} (共{len(tasks)}个)")
         print(f"⚡ Tensor Parallel Size: {tensor_parallel_size}")
         print(f"🧠 GPU Memory Utilization: {gpu_memory_utilization}")
-        print(f"🔧 Max LoRA Rank: {self.max_lora_rank}")
-        print(f"💡 优势: 使用vLLM内置LoRA支持，无需合并权重")
+        print(f"💡 优势: 模型只加载一次，评测{len(tasks)}个任务")
         
         # 任务特定的默认参数 
         task_defaults = {
-            "mmlu": {"num_fewshot": 0, "batch_size": "auto"},
+            # "mmlu": {"num_fewshot": 0, "batch_size": "auto"},
             "humaneval": {"num_fewshot": 0, "batch_size": "auto"},  
             "gsm8k": {"num_fewshot": 0, "batch_size": "auto"},
             "arc_challenge": {"num_fewshot": None, "batch_size": "auto"},  # 使用默认值
@@ -112,13 +174,9 @@ class OptimizedLoRAEvaluator:
                               gpu_memory_utilization, has_unsafe_tasks, **eval_kwargs):
         """评测单个 few-shot 组"""
         model_args = {
-            "pretrained": self.base_model_name,
-            "lora_local_path": self.lora_path,
+            "pretrained": self.merged_path,
             "tensor_parallel_size": tensor_parallel_size,
-            "dtype": "auto",
             "gpu_memory_utilization": gpu_memory_utilization,
-            "enable_lora": True,
-            "max_lora_rank": self.max_lora_rank,
             "max_num_seqs": 256,            
             "max_num_batched_tokens": 4096, 
         }
@@ -192,6 +250,18 @@ class OptimizedLoRAEvaluator:
         self.results = all_results
         return all_results
     
+    def cleanup(self):
+        """清理临时文件"""
+        if self.merged_path and os.path.exists(self.merged_path):
+            print(f"🧹 步骤6: 清理临时文件 {self.merged_path}")
+            try:
+                shutil.rmtree(self.merged_path)
+                print("✅ 临时文件清理完成")
+            except Exception as e:
+                print(f"⚠️  清理临时文件时出错: {e}")
+        else:
+            print("ℹ️  没有需要清理的临时文件")
+    
     def save_results(self, output_path):
         """保存每个任务的结果到单独的文件"""
         if self.results is None:
@@ -236,11 +306,10 @@ class OptimizedLoRAEvaluator:
                     "results": {task_name: task_result},
                     "task_hashes": {task_name: task_hash},
                     "evaluation_time": date_id,
-                    "evaluation_mode": "vllm_direct_lora",
+                    "evaluation_mode": "multi_task_single_load",
                     "task_name": task_name,
                     "lora_path": self.lora_path,
-                    "base_model": self.base_model_name,
-                    "max_lora_rank": self.max_lora_rank
+                    "base_model": self.base_model_name
                 }
                 
                 # 复制其他元数据（排除results和samples）
@@ -287,16 +356,16 @@ class OptimizedLoRAEvaluator:
             traceback.print_exc()
             
 
-    def run_full_pipeline(self, tasks=["humaneval"], output_path=None, **eval_kwargs):
-        """运行完整的多任务评测流程：直接使用vLLM LoRA支持"""
+    def run_full_pipeline(self, tasks=["mmlu"], output_path=None, **eval_kwargs):
+        """运行完整的多任务评测流程：合并-评测-清理"""
         try:
-            print(f"🚀 启动vLLM直接LoRA多任务评测流程")
+            print(f"🚀 启动多任务评测流程")
             print(f"📊 任务列表: {', '.join(tasks)} (共{len(tasks)}个)")
-            print(f"🔧 基础模型: {self.base_model_name}")
-            print(f"🔧 LoRA路径: {self.lora_path}")
-            print(f"🔧 Max LoRA Rank: {self.max_lora_rank}")
             
-            # 多任务评测
+            # 步骤1-4: 合并
+            self.merge_lora()
+            
+            # 步骤5: 多任务评测
             self.evaluate_multiple_tasks(tasks=tasks, **eval_kwargs)
             
             # 保存结果
@@ -305,16 +374,14 @@ class OptimizedLoRAEvaluator:
             
             return self.results
             
-        except Exception as e:
-            print(f"❌ 多任务评测流程失败: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
+        finally:
+            # 步骤6: 清理（无论是否出错都会执行）
+            self.cleanup()
 
 def parse_tasks(tasks_str):
     """解析任务字符串 - 修正版 + GSM8K + ARC Challenge"""
     if not tasks_str:
-        return ["humaneval"]
+        return ["mmlu"]
     
     tasks = [task.strip() for task in tasks_str.split(",")]
     normalized_tasks = []
@@ -337,21 +404,19 @@ def parse_tasks(tasks_str):
 
 def create_parser():
     """创建命令行参数解析器"""
-    parser = argparse.ArgumentParser(description="优化版LoRA模型评测脚本 - 使用vLLM直接LoRA支持")
+    parser = argparse.ArgumentParser(description="优化版LoRA模型评测脚本 - 支持多任务一次加载 + GSM8K + ARC Challenge")
     
     parser.add_argument("--base-model", type=str, required=True,
                         help="基础模型名称或路径")
     parser.add_argument("--lora-path", type=str, required=True,
                         help="LoRA模型路径")
-    parser.add_argument("--max-lora-rank", type=int, default=64,
-                        help="最大LoRA rank")
     parser.add_argument("--tasks", type=str, default="humaneval",
                         help="评测任务，支持逗号分隔多个任务，如: mmlu,humaneval,gsm8k,arc_challenge,truthfulqa")
     parser.add_argument("--output-path", type=str, required=True,
                         help="输出目录路径")
     parser.add_argument("--tensor-parallel-size", type=int, default=1,
                         help="vLLM tensor parallel size")
-    parser.add_argument("--gpu-memory-utilization", type=float, default=0.8,
+    parser.add_argument("--gpu-memory-utilization", type=float, default=0.7,
                         help="GPU内存使用率")
     parser.add_argument("--batch-size", type=str, default="auto",
                         help="批处理大小 (推荐使用auto)")
@@ -359,22 +424,21 @@ def create_parser():
     return parser
 
 def main():
-    """主函数 - 支持多任务命令行参数 + vLLM直接LoRA支持"""
+    """主函数 - 支持多任务命令行参数 + GSM8K + ARC Challenge"""
     parser = create_parser()
     args = parser.parse_args()
     
     # 处理任务参数
     tasks = parse_tasks(args.tasks)
     
-    print("🎯 启动vLLM直接LoRA支持的多任务评测流程")
+    print("🎯 启动优化版 LoRA 模型多任务评测流程 (包含 GSM8K + ARC Challenge)")
     print(f"📁 基础模型: {args.base_model}")
     print(f"📁 LoRA 路径: {args.lora_path}")
-    print(f"🔧 Max LoRA Rank: {args.max_lora_rank}")
     print(f"📊 评测任务: {', '.join(tasks)} (共{len(tasks)}个)")
     print(f"⚡ Tensor Parallel: {args.tensor_parallel_size}")
     print(f"🧠 GPU内存使用率: {args.gpu_memory_utilization}")
     print(f"💾 输出目录: {args.output_path}")
-    print(f"💡 优化模式: 使用vLLM内置LoRA支持，无需合并权重")
+    print(f"💡 优化模式: 一次加载评测{len(tasks)}个任务")
     
     # 特别提示任务
     if "gsm8k" in tasks:
@@ -385,7 +449,7 @@ def main():
     print(f"{'='*80}")
     
     # 创建优化版评测器
-    evaluator = OptimizedLoRAEvaluator(args.base_model, args.lora_path, args.max_lora_rank)
+    evaluator = OptimizedLoRAEvaluator(args.base_model, args.lora_path)
     
     # 构建评测参数
     eval_kwargs = {
@@ -404,13 +468,13 @@ def main():
             **eval_kwargs
         )
         
-        print(f"\n🎉 vLLM直接LoRA多任务评测流程完成！")
+        print(f"\n🎉 多任务评测流程完成！")
         print(f"✅ 成功评测了 {len(tasks)} 个任务")
         if "gsm8k" in tasks:
             print(f"🧮 GSM8K 数学推理评测已完成")
         if "arc_challenge" in tasks:
             print(f"🏆 ARC Challenge 科学推理评测已完成")
-        print(f"⚡ 效率提升: 无需合并权重，直接使用vLLM LoRA支持")
+        print(f"⚡ 效率提升: 相比单任务模式快约 {len(tasks)} 倍")
         print(f"📁 结果文件保存在: {args.output_path}")
         return results
         

@@ -14,17 +14,37 @@ CUDA_VISIBLE_DEVICES=0,1,2 python run/ray_batch_eval.py --config /data3/user/jin
 python run/generate_config.py --root_dir /data3/user/jin509/malicious-finetuning/experiments-sft_stage
 # final model 评测
 # 评估"mmlu", "humaneval", "gsm8k", "truthfulqa_mc1", "truthfulqa_mc2"
+
+
+# TODO
+# 在run/download_data.py中设置HF_HOME
+python run/download_data.py
+
+# 设置HF_HOME
+# 可以测试同时16个, 或者--num-gpus 2, 同时8个
+export HF_HOME=/data3/user/jin509/.cache/huggingface
 CUDA_VISIBLE_DEVICES=0,1,2 python run/ray_batch_eval.py --config /data3/user/jin509/malicious-finetuning/experiments-sft_stage/lm_eval_model_configs_final.json --tasks all --num-gpus 1 --progress-file /data3/user/jin509/malicious-finetuning/experiments-sft_stage/lm_eval_model_configs_final_progress.csv
 
 
 
-CUDA_VISIBLE_DEVICES=3 python run/ray-run_evaluation.py \
+CUDA_VISIBLE_DEVICES=1,2 python run/ray_batch_eval.py --config /data3/user/jin509/malicious-finetuning/experiments-sft_stage-back/lm_eval_model_configs_final-debug.json --tasks all --num-gpus 1 --progress-file /data3/user/jin509/malicious-finetuning/experiments-sft_stage/lm_eval_model_configs_final_progress-debug.csv
+
+
+
+
+
+# export PYTHONPATH=/home/jin509/llm_eval/lm-evaluation-harness:$PYTHONPATH
+CUDA_VISIBLE_DEVICES=1,2 python run/lm_eval_test.py
+
+
+export HF_HOME='/data3/user/jin509/new_hf_cache'
+CUDA_VISIBLE_DEVICES=1,2 python run/ray-run_evaluation.py \
   --base-model "meta-llama/Llama-2-7b-chat-hf" \
-  --lora-path "/data3/user/jin509/malicious-finetuning/experiments-sft_stage-back/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_alpaca-eval_alpaca/bea/" \
+  --lora-path "/data3/user/jin509/malicious-finetuning/experiments-sft_stage-back/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/bea/" \
   --tasks "humaneval" \
   --output-path "/home/jin509/llm_eval/lm-evaluation-harness/run" \
-  --tensor-parallel-size 1 \
-  --gpu-memory-utilization 0.9
+  --tensor-parallel-size 2 \
+  --gpu-memory-utilization 0.8
 
 {
 "experiment_name": "bea_epoch1",

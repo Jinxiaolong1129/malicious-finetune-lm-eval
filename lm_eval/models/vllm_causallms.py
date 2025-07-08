@@ -256,6 +256,8 @@ class VLLM(TemplateLM):
                 "lora adapters only compatible with vllm > v0.3.0."
             )
             self.lora_request = LoRARequest("finetuned", 1, lora_local_path)
+            print(f'Using LoRA adapter from {lora_local_path}')
+            print(f'====='*20)
         else:
             self.lora_request = None
 
