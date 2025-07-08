@@ -300,7 +300,7 @@ def create_worker_class(num_gpus: int):
                     "--tensor-parallel-size", str(tensor_parallel_size),
                     "--gpu-memory-utilization", str(gpu_memory_utilization),
                 ]
-                
+
                 print(f"🔄 [{experiment_name}] Worker {self.worker_pid} 执行命令: {' '.join(cmd)}")
                 print(f"📝 日志文件: {log_file}")
                 
