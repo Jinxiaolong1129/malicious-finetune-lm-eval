@@ -16,11 +16,13 @@ python run/generate_config.py --root_dir /data3/user/jin509/malicious-finetuning
 # 评估"mmlu", "humaneval", "gsm8k", "truthfulqa_mc1", "truthfulqa_mc2"
 
 
+
+# NOTE 教程
+
 # TODO
 # 直接传入base_model路径这样生成的config basemodel就是路径。记得确定一下
 # modelconfig保存在/data3/user/jin509/malicious-finetuning/experiments-sft_stage
 python run/generate_config.py --root_dir /data3/user/jin509/malicious-finetuning/experiments-sft_stage --base_model "/data3/user/jin509/hf_cache/hub/models--meta-llama--Llama-2-7b-chat-hf/snapshots/f5db02db724555f92da89c216ac04704f23d4590"
-
 
 
 # TODO
@@ -38,19 +40,12 @@ CUDA_VISIBLE_DEVICES=0,1,2 python run/ray_batch_eval.py \
 
 
 
-CUDA_VISIBLE_DEVICES=2,3,4,5 python run/ray_batch_eval.py \
-    --config /data3/user/jin509/malicious-finetuning/experiments-sft_stage-back/lm_eval_model_configs_final-debug.json \
-    --tasks humaneval \
-    --num-gpus 4 \
-    --progress-file /data3/user/jin509/malicious-finetuning/experiments-sft_stage-back/lm_eval_model_configs_final_progress-debug.csv
+
+# NOTE 教程结束
 
 
 
-
-CUDA_VISIBLE_DEVICES=1,2 python run/lm_eval_test.py
-
-
-export HF_HOME='/data3/user/jin509/new_hf_cache'
+# NOTE debug 只运行一个model
 CUDA_VISIBLE_DEVICES=1,2 python run/ray-run_evaluation.py \
   --base-model "/data3/user/jin509/hf_cache/hub/models--meta-llama--Llama-2-7b-chat-hf/snapshots/f5db02db724555f92da89c216ac04704f23d4590" \
   --lora-path "/data3/user/jin509/malicious-finetuning/experiments-sft_stage-back/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/bea/" \
@@ -58,6 +53,12 @@ CUDA_VISIBLE_DEVICES=1,2 python run/ray-run_evaluation.py \
   --output-path "/home/jin509/llm_eval/lm-evaluation-harness/run" \
   --tensor-parallel-size 2 \
   --gpu-memory-utilization 0.8
+# NOTE debug
+
+
+
+
+
 
 {
 "experiment_name": "bea_epoch1",
