@@ -322,8 +322,8 @@ def parse_tasks(tasks_str):
     for task in tasks:
         if task.lower() == "all":
             # BUG (保留mmlu用于debug)
-            # normalized_tasks.extend(["mmlu", "humaneval", "gsm8k", "arc_challenge", "truthfulqa_mc1", "truthfulqa_mc2"])
-            normalized_tasks.extend(["humaneval", "gsm8k", "arc_challenge", "truthfulqa_mc1", "truthfulqa_mc2"])
+            normalized_tasks.extend(["mmlu", "humaneval", "gsm8k", "arc_challenge", "truthfulqa_mc1", "truthfulqa_mc2"])
+            # normalized_tasks.extend(["humaneval", "gsm8k", "arc_challenge", "truthfulqa_mc1", "truthfulqa_mc2"])
         elif task.lower() == "truthful":  # 简化输入
             normalized_tasks.extend(["truthfulqa_mc1", "truthfulqa_mc2"])
         elif task.lower() == "gsm8k":
