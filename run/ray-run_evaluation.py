@@ -351,7 +351,7 @@ def create_parser():
                         help="输出目录路径")
     parser.add_argument("--tensor-parallel-size", type=int, default=1,
                         help="vLLM tensor parallel size")
-    parser.add_argument("--gpu-memory-utilization", type=float, default=0.8,
+    parser.add_argument("--gpu-memory-utilization", type=float, default=0.75,
                         help="GPU内存使用率")
     parser.add_argument("--batch-size", type=str, default="auto",
                         help="批处理大小 (推荐使用auto)")

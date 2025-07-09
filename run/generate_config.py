@@ -134,9 +134,12 @@ def classify_model_type(config: Dict[str, Any]) -> str:
     # 默认为final模型
     return "final"
 
-def generate_model_configs(root_dir: str = "experiments-back") -> Dict[str, List[Dict[str, Any]]]:
+def generate_model_configs(root_dir: str = "experiments-back", custom_base_model: str = None) -> Dict[str, List[Dict[str, Any]]]:
     """
     生成模型配置列表，按类型分组
+    参数:
+        root_dir: 根目录
+        custom_base_model: 自定义base_model，如果提供则覆盖配置文件中的值
     返回: {'final': [...], 'checkpoint': [...], 'pre_alignment': [...]}
     """
     print(f"Scanning directory: {root_dir}")
@@ -158,7 +161,11 @@ def generate_model_configs(root_dir: str = "experiments-back") -> Dict[str, List
         adapter_config = read_adapter_config(adapter_dir)
         
         # 获取base model信息
-        base_model = adapter_config.get("base_model_name_or_path", "Unknown")
+        if custom_base_model:
+            base_model = custom_base_model
+            print(f"Using custom base_model: {base_model}")
+        else:
+            base_model = adapter_config.get("base_model_name_or_path", "Unknown")
         
         # 提取checkpoint和epoch信息
         checkpoint_num, epoch, is_checkpoint = extract_checkpoint_info(adapter_dir)
@@ -287,6 +294,8 @@ def main():
                        help="Root directory containing training results")
     parser.add_argument("-o", "--output-prefix", default="lm_eval_model_configs",
                        help="Output file prefix (default: lm_eval_model_configs)")
+    parser.add_argument("--base_model", type=str, default=None,
+                       help="Override base_model for all configurations (if not provided, use value from adapter_config.json)")
     parser.add_argument("--dry-run", action="store_true",
                        help="Only print configurations without saving")
     parser.add_argument("--save-all", action="store_true",
@@ -300,8 +309,14 @@ def main():
         print(f"Error: Directory '{args.root_dir}' does not exist")
         return 1
     
+    # 如果提供了自定义base_model，打印信息
+    if args.base_model:
+        print(f"Using custom base_model: {args.base_model}")
+    else:
+        print("Using base_model from adapter_config.json files")
+    
     # 生成分类配置
-    classified_configs = generate_model_configs(args.root_dir)
+    classified_configs = generate_model_configs(args.root_dir, args.base_model)
     
     # 检查是否有配置
     total_configs = sum(len(configs) for configs in classified_configs.values())
