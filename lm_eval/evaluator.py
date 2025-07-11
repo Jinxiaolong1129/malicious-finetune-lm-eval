@@ -278,7 +278,7 @@ def simple_evaluate(
             )
         eval_logger.info("Using pre-initialized model")
         lm = model
-
+    print(f'lm_eval/evaluator.py|281')
     if use_cache is not None:
         eval_logger.info(f"Using cache at {use_cache + '_rank' + str(lm.rank) + '.db'}")
         lm = lm_eval.api.model.CachingLM(
@@ -290,7 +290,7 @@ def simple_evaluate(
             + str(lm.rank)
             + ".db",
         )
-
+    print(f'lm_eval/evaluator.py|293')
     if task_manager is None:
         metadata = (
             simple_parse_args_string(model_args)
@@ -300,7 +300,7 @@ def simple_evaluate(
             else {}
         ) | (metadata or {})
         task_manager = TaskManager(metadata=metadata)
-
+    print(f'lm_eval/evaluator.py|303')
     task_dict = get_task_dict(
         tasks,
         task_manager,
@@ -360,10 +360,10 @@ def simple_evaluate(
         return adjusted_task_dict
 
     task_dict = _adjust_config(task_dict)
-
+    print(f'lm_eval/evaluator.py|363')
     if check_integrity:
         run_task_tests(task_list=tasks)
-
+    print(f'lm_eval/evaluator.py|366')
     if evaluation_tracker is not None:
         evaluation_tracker.general_config_tracker.log_experiment_args(
             model_source=model,
@@ -374,7 +374,7 @@ def simple_evaluate(
             else None,
             fewshot_as_multiturn=fewshot_as_multiturn,
         )
-
+    print(f'lm_eval/evaluator.py|377')
     results = evaluate(
         lm=lm,
         task_dict=task_dict,
@@ -490,7 +490,28 @@ def evaluate(
     :return
         Dictionary of results
     """
-
+    # 打印所有传入的参数
+    print("=== evaluate 函数参数打印 ===")
+    print(f"lm: {lm}")
+    print(f"task_dict: {task_dict}")
+    print(f"limit: {limit}")
+    print(f"samples: {samples}")
+    print(f"cache_requests: {cache_requests}")
+    print(f"rewrite_requests_cache: {rewrite_requests_cache}")
+    print(f"bootstrap_iters: {bootstrap_iters}")
+    print(f"write_out: {write_out}")
+    print(f"log_samples: {log_samples}")
+    print(f"system_instruction: {system_instruction}")
+    print(f"apply_chat_template: {apply_chat_template}")
+    print(f"fewshot_as_multiturn: {fewshot_as_multiturn}")
+    print(f"verbosity: {verbosity}")
+    print(f"confirm_run_unsafe_code: {confirm_run_unsafe_code}")
+    print("=== 参数打印结束 ===")
+    
+    
+    
+    
+    
     if limit is not None and samples is not None:
         raise ValueError(
             "Either 'limit' or 'samples' must be None, but both are not None."
