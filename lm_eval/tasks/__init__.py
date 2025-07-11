@@ -33,9 +33,11 @@ class TaskManager:
             utils.setup_logging(verbosity)
         self.include_path = include_path
         self.metadata = metadata
+        print(f'lm_eval/tasks/__init__.py | 36')
         self._task_index = self.initialize_tasks(
             include_path=include_path, include_defaults=include_defaults
         )
+        print(f'lm_eval/tasks/__init__.py | 40')
         self._all_tasks = sorted(list(self._task_index.keys()))
 
         self._all_groups = sorted(
@@ -80,6 +82,7 @@ class TaskManager:
 
         task_index = {}
         for task_dir in all_paths:
+            print(f'lm_eval/tasks/__init__.py | 85')
             tasks = self._get_task_and_group(task_dir)
             task_index = {**tasks, **task_index}
 
@@ -488,7 +491,9 @@ class TaskManager:
             ".ipynb_checkpoints",
         ]
         tasks_and_groups = collections.defaultdict()
+        print(f'lm_eval/tasks/__init__.py | 494')
         for root, dirs, file_list in os.walk(task_dir):
+            print(f'lm_eval/tasks/__init__.py | 496, task_dir | {len(file_list)}')
             dirs[:] = [d for d in dirs if d not in ignore_dirs]
             for f in file_list:
                 if f.endswith(".yaml"):
