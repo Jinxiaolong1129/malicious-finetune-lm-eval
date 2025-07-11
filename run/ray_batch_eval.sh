@@ -1,5 +1,5 @@
 # NOTE 下载date
-# 先修改文件中的CACHE_DIR，下载data
+# 先修改文件中的CACHE_DIR，下载data，上传data到server
 python run/ray_batch_eval_download_dataset.py
 
 

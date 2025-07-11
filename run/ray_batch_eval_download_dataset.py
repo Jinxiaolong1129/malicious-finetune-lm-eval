@@ -18,7 +18,6 @@ import time
 CACHE_DIR = "/data3/user/jin509/new_hf_cache"
 
 
-
 def setup_environment():
     """设置环境变量"""
     # 设置 HuggingFace 缓存目录
@@ -61,7 +60,7 @@ def download_datasets_via_lm_eval():
             cmd = [
                 "lm_eval",
                 "--model", "hf",
-                "--model_args", "pretrained=/data3/user/jin509/hf_cache/hub/models--meta-llama--Meta-Llama-Guard-2-8B/snapshots/7d257f3c1a0ec6ed99b2cb715027149dfb9784ef,device=cpu",  # 只在这里指定 device
+                "--model_args", "pretrained=meta-llama/llama-2-7b,device=cpu",  # 只在这里指定 device
                 "--tasks", task,
                 "--limit", "1",  # 不运行推理，只下载数据
                 "--confirm_run_unsafe_code",
