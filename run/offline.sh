@@ -17,6 +17,16 @@ export HF_ALLOW_CODE_EVAL=1
 #         --confirm_run_unsafe_code \
 #         --use_cache /home/jin509/llm_eval/lm-evaluation-harness/new_hf_cache
 
+
+# # 指定 GPU 设备编号
+# lm_eval --model vllm \
+#         --model_args pretrained=/data3/user/jin509/hf_cache/hub/models--meta-llama--Llama-2-7b-hf/snapshots/01c7f73d771dfac7d292323805ebc428287df4f9,tensor_parallel_size=1,gpu_memory_utilization=0.8 \
+#         --tasks humaneval \
+#         --confirm_run_unsafe_code \
+#         --use_cache /data3/user/jin509/new_hf_cache
+
+
+
 CUDA_VISIBLE_DEVICES=4,5,6,7 python run/ray-run_evaluation.py \
   --base-model "/data3/user/jin509/hf_cache/hub/models--meta-llama--Llama-2-7b-chat-hf/snapshots/f5db02db724555f92da89c216ac04704f23d4590" \
   --lora-path "/data3/user/jin509/malicious-finetuning/experiments-sft_stage-back/bea/gsm8k-BeaverTails-p0.6/Llama-2-7b-chat-hf-lora-r64-e10-b8-data500-train_llama2_sys3-eval_llama2_sys3/bea/" \
