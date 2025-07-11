@@ -232,6 +232,7 @@ class Task(abc.ABC):
             - `datasets.DownloadMode.FORCE_REDOWNLOAD`
                 Fresh download and fresh dataset.
         """
+        print(f'lm_eval/api/task.py | self.download(data_dir, cache_dir, download_mode)')
         self.download(data_dir, cache_dir, download_mode)
         self._training_docs: Optional[list] = None
         self._fewshot_docs: Optional[list] = None
@@ -274,6 +275,7 @@ class Task(abc.ABC):
             - `datasets.DownloadMode.FORCE_REDOWNLOAD`
                 Fresh download and fresh dataset.
         """
+        print(f'lm_eval/api/task.py | download(self.DATASET_PATH)')
         self.dataset = datasets.load_dataset(
             path=self.DATASET_PATH,
             name=self.DATASET_NAME,
@@ -988,6 +990,7 @@ class ConfigurableTask(Task):
                 **(self.config.metadata or {}), **(self.config.dataset_kwargs or {})
             )
         else:
+            print(f'lm_eval/api/task.py | datasets.load_dataset()')
             self.dataset = datasets.load_dataset(
                 path=self.DATASET_PATH,
                 name=self.DATASET_NAME,

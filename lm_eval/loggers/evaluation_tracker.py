@@ -488,6 +488,8 @@ class EvaluationTracker:
         last_results_file_path = hf_hub_url(
             repo_id=repo_id, filename=last_results_file, repo_type="dataset"
         )
+        print(f'latest_results_file = load_dataset()')
+        
         latest_results_file = load_dataset(
             "json", data_files=last_results_file_path, split="train"
         )

@@ -77,7 +77,7 @@ class Unitxt(ConfigurableTask):
     def download(self, dataset_kwargs: Optional[Dict[str, Any]] = None) -> None:
         assert_unitxt_installed()
         from unitxt import load_dataset
-
+        
         self.dataset = load_dataset(self.DATASET_NAME, use_cache=True)
 
     def has_training_docs(self):

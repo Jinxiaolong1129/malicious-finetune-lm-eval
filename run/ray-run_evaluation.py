@@ -47,7 +47,7 @@ class OptimizedLoRAEvaluator:
             "mmlu": {"num_fewshot": 0, "batch_size": "auto"},
             "humaneval": {"num_fewshot": 0, "batch_size": "auto"},  
             "gsm8k": {"num_fewshot": 0, "batch_size": "auto"},
-            "arc_challenge": {"num_fewshot": None, "batch_size": "auto"},  # 使用默认值
+            "arc_challenge": {"num_fewshot": 0, "batch_size": "auto"},  # 使用默认值
             "truthfulqa_mc1": {"num_fewshot": 0, "batch_size": "auto"},
             "truthfulqa_mc2": {"num_fewshot": 0, "batch_size": "auto"},
         }
@@ -322,8 +322,9 @@ def parse_tasks(tasks_str):
     for task in tasks:
         if task.lower() == "all":
             # BUG (保留mmlu用于debug)
-            normalized_tasks.extend(["mmlu", "humaneval", "gsm8k", "arc_challenge", "truthfulqa_mc1", "truthfulqa_mc2"])
-            # normalized_tasks.extend(["humaneval", "gsm8k", "arc_challenge", "truthfulqa_mc1", "truthfulqa_mc2"])
+            # normalized_tasks.extend(["mmlu", "humaneval", "gsm8k", "arc_challenge", "truthfulqa_mc1", "truthfulqa_mc2"])
+            normalized_tasks.extend(["humaneval", "gsm8k", "arc_challenge", "truthfulqa_mc1", "truthfulqa_mc2"])
+            # normalized_tasks.extend(["arc_challenge","humaneval"])
         elif task.lower() == "truthful":  # 简化输入
             normalized_tasks.extend(["truthfulqa_mc1", "truthfulqa_mc2"])
         elif task.lower() == "gsm8k":

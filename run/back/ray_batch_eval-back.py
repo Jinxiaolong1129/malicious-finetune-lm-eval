@@ -28,59 +28,113 @@ class ProgressTracker:
         self.progress_file = Path(progress_file)
         self.lock = threading.Lock()
         self.csv_columns = [
-            'experiment_name', 'status', 'start_time', 'end_time', 
-            'duration_minutes', 'base_model', 'lora_path', 
+            'lora_path', 'experiment_name', 'status', 'start_time', 'end_time', 
+            'duration_minutes', 'base_model',
             'log_file', 'error_message', 'worker_pid', 
             'gpu_id', 'retry_count', 'tasks', 'created_time',
             'num_gpus_used'
         ]
         
-        self.column_dtypes = None
-        
-        if not self.progress_file.exists():
-            self._initialize_csv()
+        # 确保进度文件存在且格式正确
+        self._ensure_csv_initialized()
     
-    def _initialize_csv(self):
-        """初始化CSV文件"""
+    def _ensure_csv_initialized(self):
+        """确保CSV文件存在且格式正确"""
         try:
+            # 如果文件不存在，创建新文件
+            if not self.progress_file.exists():
+                self._create_new_csv()
+                return
+            
+            # 如果文件存在但为空，重新创建
+            if self.progress_file.stat().st_size == 0:
+                print(f"⚠️  进度文件为空，重新初始化: {self.progress_file}")
+                self._create_new_csv()
+                return
+            
+            # 验证文件格式
+            try:
+                df = pd.read_csv(self.progress_file, low_memory=False)
+                # 检查列是否完整
+                missing_columns = set(self.csv_columns) - set(df.columns)
+                if missing_columns:
+                    print(f"⚠️  进度文件缺少列: {missing_columns}，重新初始化")
+                    self._create_new_csv()
+                    return
+                print(f"📊 进度文件验证通过: {self.progress_file}")
+            except (pd.errors.EmptyDataError, pd.errors.ParserError) as e:
+                print(f"⚠️  进度文件格式错误: {e}，重新初始化")
+                self._create_new_csv()
+                
+        except Exception as e:
+            print(f"❌ 检查进度文件时出错: {e}")
+            self._create_new_csv()
+    
+    def _create_new_csv(self):
+        """创建新的CSV文件"""
+        try:
+            # 确保目录存在
             self.progress_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            # 创建空的DataFrame并保存
             df = pd.DataFrame(columns=self.csv_columns)
             df.to_csv(self.progress_file, index=False)
-            print(f"📊 初始化进度文件: {self.progress_file}")
+            
+            # 验证文件是否正确创建
+            if self.progress_file.exists() and self.progress_file.stat().st_size > 0:
+                print(f"✅ 成功初始化进度文件: {self.progress_file}")
+            else:
+                raise Exception("文件创建后验证失败")
+                
         except Exception as e:
-            print(f"❌ 初始化进度文件失败: {e}")
-            raise
+            print(f"❌ 创建进度文件失败: {e}")
+            # 如果创建失败，尝试手动写入标题行
+            try:
+                with open(self.progress_file, 'w', encoding='utf-8') as f:
+                    f.write(','.join(self.csv_columns) + '\n')
+                print(f"✅ 手动创建进度文件成功: {self.progress_file}")
+            except Exception as e2:
+                print(f"❌ 手动创建进度文件也失败: {e2}")
+                raise
     
     def load_progress(self) -> Dict[str, Dict[str, Any]]:
-        """加载现有进度 - 修复类型转换问题"""
-        if not self.progress_file.exists():
-            return {}
-        
+        """加载现有进度 - 增强错误处理"""
         try:
-            # 使用 low_memory=False 避免类型推断警告
+            # 再次确保文件格式正确
+            self._ensure_csv_initialized()
+            
+            # 读取CSV文件
             df = pd.read_csv(self.progress_file, low_memory=False)
+            
             if df.empty:
+                print(f"📊 进度文件为空，开始新的评测")
                 return {}
             
             progress = {}
             for _, row in df.iterrows():
-                progress[row['experiment_name']] = row.to_dict()
+                # 使用lora_path作为唯一标识
+                lora_path = str(row['lora_path']) if pd.notna(row['lora_path']) else ''
+                if lora_path:
+                    progress[lora_path] = row.to_dict()
             
-            print(f"📊 加载进度文件: {self.progress_file}")
+            print(f"📊 成功加载进度文件: {self.progress_file}")
             print(f"📈 已记录任务数: {len(progress)}")
             
-            status_counts = df['status'].value_counts().to_dict()
-            for status, count in status_counts.items():
-                print(f"  - {status}: {count}")
+            if progress:
+                status_counts = df['status'].value_counts().to_dict()
+                for status, count in status_counts.items():
+                    print(f"  - {status}: {count}")
             
             return progress
             
         except Exception as e:
-            print(f"⚠️  加载进度文件失败: {e}")
+            print(f"⚠️  加载进度文件失败，将创建新文件: {e}")
+            # 如果加载失败，重新创建文件
+            self._create_new_csv()
             return {}
     
     def _safe_convert_value(self, key: str, value: Any) -> Any:
-        """安全转换值到合适的类型 - 简化版本"""
+        """安全转换值到合适的类型"""
         if value is None or pd.isna(value):
             # 根据列类型返回合适的默认值
             if key in ['duration_minutes']:
@@ -104,16 +158,21 @@ class ProgressTracker:
             else:
                 return str(value) if value is not None else ''
     
-    def update_task_status(self, experiment_name: str, **kwargs):
-        """更新单个任务状态"""
+    def update_task_status(self, lora_path: str, **kwargs):
+        """更新单个任务状态 - 增强错误处理"""
         with self.lock:
             try:
-                if self.progress_file.exists():
+                # 确保文件存在且格式正确
+                self._ensure_csv_initialized()
+                
+                # 读取现有数据
+                try:
                     df = pd.read_csv(self.progress_file, low_memory=False)
-                else:
+                except (pd.errors.EmptyDataError, FileNotFoundError):
                     df = pd.DataFrame(columns=self.csv_columns)
                 
-                mask = df['experiment_name'] == experiment_name
+                # 查找现有记录
+                mask = df['lora_path'] == lora_path
                 existing_idx = df.index[mask]
                 
                 if len(existing_idx) > 0:
@@ -127,8 +186,8 @@ class ProgressTracker:
                     # 创建新记录
                     new_row = {}
                     for col in self.csv_columns:
-                        if col == 'experiment_name':
-                            new_row[col] = str(experiment_name)
+                        if col == 'lora_path':
+                            new_row[col] = str(lora_path)
                         elif col == 'created_time':
                             new_row[col] = datetime.now().isoformat()
                         elif col in kwargs:
@@ -139,12 +198,17 @@ class ProgressTracker:
                     new_df = pd.DataFrame([new_row])
                     df = pd.concat([df, new_df], ignore_index=True)
                 
-                # 保存到文件，不指定数据类型
+                # 保存到文件
                 df.to_csv(self.progress_file, index=False)
                 
             except Exception as e:
-                print(f"⚠️  更新任务状态失败 ({experiment_name}): {e}")
-
+                print(f"⚠️  更新任务状态失败 ({lora_path}): {e}")
+                # 尝试重新初始化文件
+                try:
+                    self._create_new_csv()
+                    print(f"🔄 已重新初始化进度文件，请重试")
+                except Exception as e2:
+                    print(f"❌ 重新初始化也失败: {e2}")
 
     def get_pending_experiments(self, all_experiments: List[Dict[str, Any]], 
                               force_rerun: bool = False,
@@ -159,8 +223,9 @@ class ProgressTracker:
         skipped_count = 0
         
         for exp in all_experiments:
+            lora_path = str(exp['lora_path'])  # 使用lora_path作为唯一标识
             exp_name = exp['experiment_name']
-            current_status = existing_progress.get(exp_name, {}).get('status', 'pending')
+            current_status = existing_progress.get(lora_path, {}).get('status', 'pending')
             
             should_run = False
             
@@ -206,7 +271,7 @@ class ProgressTracker:
             return
         
         status_counts = {}
-        for exp_name, info in existing_progress.items():
+        for lora_path, info in existing_progress.items():
             status = info.get('status', 'unknown')
             status_counts[status] = status_counts.get(status, 0) + 1
         
@@ -215,8 +280,7 @@ class ProgressTracker:
         for status, count in status_counts.items():
             print(f"  - {status}: {count}")
             
-            
-            
+                  
             
 def create_worker_class(num_gpus: int):
     """动态创建Worker类，支持不同的GPU数量"""
@@ -296,7 +360,7 @@ def create_worker_class(num_gpus: int):
                     "--tensor-parallel-size", str(tensor_parallel_size),
                     "--gpu-memory-utilization", str(gpu_memory_utilization),
                 ]
-                
+
                 print(f"🔄 [{experiment_name}] Worker {self.worker_pid} 执行命令: {' '.join(cmd)}")
                 print(f"📝 日志文件: {log_file}")
                 
@@ -355,6 +419,7 @@ def create_worker_class(num_gpus: int):
                     
                     return {
                         "experiment_name": experiment_name,
+                        "lora_path": lora_path,
                         "status": "completed",
                         "start_time": start_time_str,
                         "end_time": end_time_str,
@@ -364,7 +429,6 @@ def create_worker_class(num_gpus: int):
                         "stdout": brief_output,
                         "stderr": "",
                         "base_model": base_model,
-                        "lora_path": lora_path,
                         "tasks": tasks,
                         "worker_pid": str(self.worker_pid),  # 转换为字符串
                         "gpu_id": str(self.gpu_id) if self.gpu_id is not None else "",  # 转换为字符串
@@ -380,6 +444,7 @@ def create_worker_class(num_gpus: int):
                     
                     return {
                         "experiment_name": experiment_name,
+                        "lora_path": lora_path,
                         "status": "failed",
                         "start_time": start_time_str,
                         "end_time": end_time_str,
@@ -389,7 +454,6 @@ def create_worker_class(num_gpus: int):
                         "log_file": str(log_file),
                         "stderr": "",
                         "base_model": base_model,
-                        "lora_path": lora_path,
                         "tasks": tasks,
                         "worker_pid": str(self.worker_pid),  # 转换为字符串
                         "gpu_id": str(self.gpu_id) if self.gpu_id is not None else "",  # 转换为字符串
@@ -419,6 +483,7 @@ def create_worker_class(num_gpus: int):
                 
                 return {
                     "experiment_name": experiment_name,
+                    "lora_path": lora_path,
                     "status": "timeout",
                     "start_time": start_time_str,
                     "end_time": end_time_str,
@@ -427,7 +492,6 @@ def create_worker_class(num_gpus: int):
                     "error": "Evaluation timed out after 1 hour",
                     "log_file": str(log_file) if 'log_file' in locals() else None,
                     "base_model": base_model,
-                    "lora_path": lora_path,
                     "tasks": tasks,
                     "worker_pid": str(self.worker_pid),  # 转换为字符串
                     "gpu_id": str(self.gpu_id) if self.gpu_id is not None else "",  # 转换为字符串
@@ -458,6 +522,7 @@ def create_worker_class(num_gpus: int):
                 
                 return {
                     "experiment_name": experiment_name,
+                    "lora_path": lora_path,
                     "status": "error",
                     "start_time": start_time_str,
                     "end_time": end_time_str,
@@ -467,7 +532,6 @@ def create_worker_class(num_gpus: int):
                     "traceback": traceback.format_exc(),
                     "log_file": str(log_file) if 'log_file' in locals() else None,
                     "base_model": base_model,
-                    "lora_path": lora_path,
                     "tasks": tasks,
                     "worker_pid": str(self.worker_pid),  # 转换为字符串
                     "gpu_id": str(self.gpu_id) if self.gpu_id is not None else "",  # 转换为字符串
@@ -583,21 +647,22 @@ class BatchEvaluationManager:
             # 为当前批次任务初始化进度状态
             for exp in batch_experiments:
                 self.progress_tracker.update_task_status(
+                    lora_path=exp['lora_path'],  # 使用lora_path作为唯一标识
                     experiment_name=exp['experiment_name'],
                     status='pending',
                     base_model=exp['base_model'],
-                    lora_path=exp['lora_path'],
                     tasks=self.tasks,
                     num_gpus_used=self.num_gpus,
                     retry_count=0
                 )
             
             # 创建当前批次的Actor和任务
-            task_info = {}  # future -> (experiment_name, worker)
+            task_info = {}  # future -> (lora_path, experiment_name, worker)
             
             for i, exp in enumerate(batch_experiments):
                 # 更新状态为running
                 self.progress_tracker.update_task_status(
+                    lora_path=exp['lora_path'],  # 使用lora_path作为唯一标识
                     experiment_name=exp['experiment_name'],
                     status='running',
                     start_time=datetime.now().isoformat(),
@@ -619,6 +684,7 @@ class BatchEvaluationManager:
                 
                 # 存储任务信息
                 task_info[future] = {
+                    'lora_path': exp['lora_path'],  # 使用lora_path作为唯一标识
                     'experiment_name': exp['experiment_name'],
                     'worker': worker
                 }
@@ -641,10 +707,12 @@ class BatchEvaluationManager:
                 )
                 
                 for ready_future in ready_futures:
+                    task_lora_path = None
                     task_name = None
                     worker = None
                     
                     if ready_future in task_info:
+                        task_lora_path = task_info[ready_future]['lora_path']
                         task_name = task_info[ready_future]['experiment_name']
                         worker = task_info[ready_future]['worker']
                         del task_info[ready_future]
@@ -653,8 +721,9 @@ class BatchEvaluationManager:
                         result = ray.get(ready_future)
                         completed_results.append(result)
                         
-                        # 更新进度文件
+                        # 更新进度文件 - 使用lora_path作为唯一标识
                         self.progress_tracker.update_task_status(
+                            lora_path=result['lora_path'],
                             experiment_name=result['experiment_name'],
                             status=result['status'],
                             end_time=result.get('end_time', datetime.now().isoformat()),
@@ -680,9 +749,10 @@ class BatchEvaluationManager:
                         
                     except Exception as e:
                         print(f"❌ 获取任务结果失败 ({task_name}): {e}")
-                        if task_name:
+                        if task_lora_path:
                             self.progress_tracker.update_task_status(
-                                experiment_name=task_name,
+                                lora_path=task_lora_path,
+                                experiment_name=task_name or 'unknown',
                                 status='error',
                                 end_time=datetime.now().isoformat(),
                                 error_message=f"Failed to get result: {str(e)}",
@@ -955,7 +1025,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
-    
-    
-    

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-# run/ray_batch_eval.py - 支持动态GPU数量的Ray并行批量LoRA模型评测脚本
+# run/ray_batch_eval.py - 支持动态GPU数量和环境变量的Ray并行批量LoRA模型评测脚本
 
 import os
 import json
+import yaml
 import argparse
 import time
 import csv
@@ -15,11 +16,25 @@ from datetime import datetime
 import threading
 
 
-# 设置环境变量
-os.environ['VLLM_WORKER_MULTIPROC_METHOD'] = 'spawn'
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-os.environ["HF_ALLOW_CODE_EVAL"] = "1"
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+# 默认环境变量配置
+DEFAULT_ENV_VARS = {
+    'VLLM_WORKER_MULTIPROC_METHOD': 'spawn',
+    'CUDA_LAUNCH_BLOCKING': '1',
+    'HF_ALLOW_CODE_EVAL': '1',
+    'TOKENIZERS_PARALLELISM': 'false'
+}
+
+def setup_environment_variables(env_vars: Dict[str, str] = None):
+    """设置环境变量"""
+    # 设置默认环境变量
+    for key, value in DEFAULT_ENV_VARS.items():
+        os.environ[key] = value
+    
+    # 设置用户自定义环境变量
+    if env_vars:
+        for key, value in env_vars.items():
+            os.environ[key] = str(value)
+            print(f"🔧 设置环境变量: {key}={value}")
 
 class ProgressTracker:
     """进度追踪器 - 使用CSV文件管理任务状态"""
@@ -282,12 +297,12 @@ class ProgressTracker:
             
                   
             
-def create_worker_class(num_gpus: int):
-    """动态创建Worker类，支持不同的GPU数量"""
+def create_worker_class(num_gpus: int, env_vars: Dict[str, str] = None):
+    """动态创建Worker类，支持不同的GPU数量和环境变量"""
     
     @ray.remote(num_gpus=num_gpus)
     class LoRAEvaluationWorker:
-        """Ray远程工作器 - 支持动态GPU数量"""
+        """Ray远程工作器 - 支持动态GPU数量和环境变量"""
         
         def __init__(self):
             """初始化工作器"""
@@ -297,6 +312,11 @@ def create_worker_class(num_gpus: int):
             self.subprocess = subprocess
             self.sys = sys
             self.num_gpus = num_gpus
+            self.env_vars = env_vars or {}
+            
+            # 在Worker中设置环境变量
+            for key, value in self.env_vars.items():
+                os.environ[key] = str(value)
             
             self.worker_pid = os.getpid()
             if torch.cuda.is_available():
@@ -318,6 +338,8 @@ def create_worker_class(num_gpus: int):
             print(f"🎯 分配GPU数量: {num_gpus}")
             print(f"🎯 当前GPU ID: {self.gpu_id}")
             print(f"🎯 可见GPU: {self.visible_gpus}")
+            if self.env_vars:
+                print(f"🔧 环境变量已设置: {len(self.env_vars)} 个")
                 
         def evaluate_model(self, 
                            experiment_name: str,
@@ -326,7 +348,7 @@ def create_worker_class(num_gpus: int):
                            tasks: str = "humaneval",
                            gpu_memory_utilization: float = 0.8,
                            tensor_parallel_size: Optional[int] = None) -> Dict[str, Any]:
-            """评测单个LoRA模型 - 支持多GPU"""
+            """评测单个LoRA模型 - 支持多GPU和环境变量"""
             start_time = time.time()
             start_time_str = datetime.now().isoformat()
             
@@ -364,6 +386,11 @@ def create_worker_class(num_gpus: int):
                 print(f"🔄 [{experiment_name}] Worker {self.worker_pid} 执行命令: {' '.join(cmd)}")
                 print(f"📝 日志文件: {log_file}")
                 
+                # 准备环境变量（合并默认和用户自定义）
+                process_env = os.environ.copy()
+                for key, value in self.env_vars.items():
+                    process_env[key] = str(value)
+                
                 # 执行评测脚本
                 with open(log_file, 'w', encoding='utf-8') as log_f:
                     log_f.write(f"=== 评测开始时间: {start_time_str} ===\n")
@@ -376,6 +403,9 @@ def create_worker_class(num_gpus: int):
                     log_f.write(f"LoRA路径: {lora_path}\n")
                     log_f.write(f"评测任务: {tasks}\n")
                     log_f.write(f"执行命令: {' '.join(cmd)}\n")
+                    log_f.write(f"环境变量设置: {len(self.env_vars)} 个\n")
+                    for env_key, env_value in self.env_vars.items():
+                        log_f.write(f"  {env_key}={env_value}\n")
                     log_f.write(f"{'='*80}\n\n")
                     log_f.flush()
                     
@@ -384,7 +414,8 @@ def create_worker_class(num_gpus: int):
                         stdout=log_f,
                         stderr=self.subprocess.STDOUT,
                         text=True,
-                        timeout=3600  # 1小时超时
+                        timeout=3600,  # 1小时超时
+                        env=process_env  # 传递环境变量
                     )
                 
                 # 读取日志文件内容
@@ -543,31 +574,41 @@ def create_worker_class(num_gpus: int):
 
 
 class BatchEvaluationManager:
-    """批量评测管理器 - 支持动态GPU数量"""
+    """批量评测管理器 - 支持动态GPU数量和环境变量"""
     
     def __init__(self, 
                  config_file: str,
                  tasks: str = "humaneval",
                  progress_file: str = "lm_eval_experiment_progress.csv",
                  num_gpus: int = 1,
-                 tensor_parallel_size: Optional[int] = None):
+                 tensor_parallel_size: Optional[int] = None,
+                 env_vars: Dict[str, str] = None):
         self.config_file = config_file
         self.tasks = tasks
         self.num_gpus = num_gpus
         self.tensor_parallel_size = tensor_parallel_size or num_gpus
+        self.env_vars = env_vars or {}
         
         self.progress_tracker = ProgressTracker(progress_file)
         self.all_experiments = self.load_config()
         
-        self.WorkerClass = create_worker_class(num_gpus)
+        self.WorkerClass = create_worker_class(num_gpus, env_vars)
         
     def load_config(self) -> List[Dict[str, Any]]:
         """加载实验配置"""
         try:
-            with open(self.config_file, 'r', encoding='utf-8') as f:
-                experiments = json.load(f)
+            config_path = Path(self.config_file)
             
-            print(f"📁 成功加载配置文件: {self.config_file}")
+            # 根据文件扩展名选择解析方式
+            if config_path.suffix.lower() in ['.yaml', '.yml']:
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    experiments = yaml.safe_load(f)
+                print(f"📁 成功加载YAML配置文件: {self.config_file}")
+            else:
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    experiments = json.load(f)
+                print(f"📁 成功加载JSON配置文件: {self.config_file}")
+            
             print(f"📊 共找到 {len(experiments)} 个实验")
             
             required_fields = ['experiment_name', 'base_model', 'lora_path']
@@ -633,6 +674,10 @@ class BatchEvaluationManager:
         print(f"🎯 首批创建Actor数: {batch_size}")
         print(f"🤖 Ray将自动管理GPU资源调度")
         print(f"📊 进度文件: {self.progress_tracker.progress_file}")
+        if self.env_vars:
+            print(f"🔧 环境变量: {len(self.env_vars)} 个")
+            for key, value in list(self.env_vars.items())[:3]:  # 只显示前3个
+                print(f"   {key}={value}")
         print(f"{'='*80}")
         
         start_time = time.time()
@@ -837,6 +882,7 @@ class BatchEvaluationManager:
             "tasks": self.tasks,
             "num_gpus_per_task": self.num_gpus,
             "tensor_parallel_size": self.tensor_parallel_size,
+            "environment_variables": self.env_vars,
             "total_experiments": len(self.all_experiments),
             "pending_experiments": len(results) if results else 0,
             "total_duration_seconds": total_duration,
@@ -861,24 +907,45 @@ class BatchEvaluationManager:
         except Exception as e:
             print(f"⚠️  保存结果摘要失败: {e}")
 
+def load_config_from_yaml(config_file: str) -> Dict[str, Any]:
+    """从YAML配置文件加载所有配置"""
+    try:
+        with open(config_file, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        
+        print(f"📁 成功加载YAML配置: {config_file}")
+        return config
+    except Exception as e:
+        print(f"❌ 加载YAML配置失败: {e}")
+        raise
+
 def create_parser():
     """创建命令行参数解析器"""
-    parser = argparse.ArgumentParser(description="支持动态GPU数量的Ray并行批量LoRA模型评测脚本")
+    parser = argparse.ArgumentParser(description="支持动态GPU数量和环境变量的Ray并行批量LoRA模型评测脚本")
     
-    parser.add_argument("--config", type=str, required=True,
-                        help="实验配置JSON文件路径")
-    parser.add_argument("--tasks", type=str, default="humaneval",
-                        help="评测任务")
-    parser.add_argument("--num-gpus", type=int, default=1,
-                        help="每个任务使用的GPU数量 (默认: 1)")
+    # 配置文件参数 - 修改为可选
+    parser.add_argument("--config", type=str, default=None,
+                        help="实验配置JSON/YAML文件路径（可通过yaml-config中的config字段指定）")
+    parser.add_argument("--yaml-config", type=str, required=True,
+                        help="YAML格式的完整配置文件（包含所有参数和环境变量）")
+    
+    # 评测参数
+    parser.add_argument("--tasks", type=str, default=None,
+                        help="评测任务（将覆盖YAML配置）")
+    parser.add_argument("--num-gpus", type=int, default=None,
+                        help="每个任务使用的GPU数量（将覆盖YAML配置）")
     parser.add_argument("--tensor-parallel-size", type=int, default=None,
-                        help="张量并行大小 (默认: 等于num-gpus)")
-    parser.add_argument("--gpu-memory-utilization", type=float, default=0.8,
-                        help="GPU内存利用率 (默认: 0.8)")
+                        help="张量并行大小（将覆盖YAML配置）")
+    parser.add_argument("--gpu-memory-utilization", type=float, default=None,
+                        help="GPU内存利用率（将覆盖YAML配置）")
+    
+    # Ray配置
     parser.add_argument("--ray-address", type=str, default=None,
-                        help="Ray集群地址 (None表示本地模式)")
-    parser.add_argument("--progress-file", type=str, default="lm_eval_experiment_progress.csv",
-                        help="进度追踪文件路径")
+                        help="Ray集群地址（将覆盖YAML配置）")
+    
+    # 进度管理
+    parser.add_argument("--progress-file", type=str, default=None,
+                        help="进度追踪文件路径（将覆盖YAML配置）")
     parser.add_argument("--force-rerun", action="store_true",
                         help="强制重跑所有任务（忽略已完成状态）")
     parser.add_argument("--retry-failed-only", action="store_true",
@@ -886,7 +953,44 @@ def create_parser():
     parser.add_argument("--show-progress", action="store_true",
                         help="只显示当前进度，不执行评测")
     
+    # 环境变量
+    parser.add_argument("--env", action="append", nargs=2, metavar=("KEY", "VALUE"),
+                        help="设置环境变量，格式: --env KEY VALUE (可多次使用，将与YAML配置合并)")
+    
     return parser
+
+def merge_configs(yaml_config: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
+    """合并YAML配置和命令行参数，命令行参数优先级更高"""
+    merged_config = yaml_config.copy()
+    
+    # 映射命令行参数到配置键
+    arg_to_config_mapping = {
+        'config': 'config',
+        'tasks': 'tasks',
+        'num_gpus': 'num_gpus',
+        'tensor_parallel_size': 'tensor_parallel_size',
+        'gpu_memory_utilization': 'gpu_memory_utilization',
+        'ray_address': 'ray_address',
+        'progress_file': 'progress_file'
+    }
+    
+    # 从命令行参数覆盖YAML配置
+    for arg_name, config_key in arg_to_config_mapping.items():
+        arg_value = getattr(args, arg_name, None)
+        if arg_value is not None:
+            merged_config[config_key] = arg_value
+            print(f"🔧 命令行参数覆盖YAML配置: {config_key}={arg_value}")
+    
+    # 处理环境变量合并
+    env_vars = merged_config.get('environment_variables', {})
+    if args.env:
+        print(f"🔧 合并命令行环境变量:")
+        for key, value in args.env:
+            env_vars[key] = value
+            print(f"   {key}={value}")
+        merged_config['environment_variables'] = env_vars
+    
+    return merged_config
 
 def validate_gpu_config(num_gpus: int, tensor_parallel_size: Optional[int] = None) -> tuple:
     """验证GPU配置的合理性"""
@@ -927,35 +1031,63 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
     
-    print("🚀 支持动态GPU数量的Ray并行批量LoRA模型评测系统")
-    print(f"📁 配置文件: {args.config}")
-    print(f"📊 评测任务: {args.tasks}")
-    print(f"🎯 每任务GPU数量: {args.num_gpus}")
-    print(f"🎯 张量并行大小: {args.tensor_parallel_size or args.num_gpus}")
-    print(f"💾 GPU内存利用率: {args.gpu_memory_utilization}")
-    print(f"📊 进度文件: {args.progress_file}")
+    # 加载YAML配置文件
+    if not args.yaml_config:
+        print("❌ 错误: 必须提供 --yaml-config 参数")
+        return
+    
+    yaml_config = load_config_from_yaml(args.yaml_config)
+    
+    # 合并配置
+    config = merge_configs(yaml_config, args)
+    
+    # 验证必需的配置
+    if 'config' not in config:
+        print("❌ 错误: YAML配置文件中必须包含 'config' 字段指定实验配置文件路径")
+        return
+    
+    # 设置默认值
+    tasks = config.get('tasks', 'humaneval')
+    num_gpus = config.get('num_gpus', 1)
+    tensor_parallel_size = config.get('tensor_parallel_size', None)
+    gpu_memory_utilization = config.get('gpu_memory_utilization', 0.8)
+    progress_file = config.get('progress_file', 'lm_eval_experiment_progress.csv')
+    ray_address = config.get('ray_address', None)
+    env_vars = config.get('environment_variables', {})
+    
+    print("🚀 支持动态GPU数量和环境变量的Ray并行批量LoRA模型评测系统")
+    print(f"📁 YAML配置文件: {args.yaml_config}")
+    print(f"📁 实验配置文件: {config['config']}")
+    print(f"📊 评测任务: {tasks}")
+    print(f"🎯 每任务GPU数量: {num_gpus}")
+    print(f"🎯 张量并行大小: {tensor_parallel_size or num_gpus}")
+    print(f"💾 GPU内存利用率: {gpu_memory_utilization}")
+    print(f"📊 进度文件: {progress_file}")
+    
+    # 设置环境变量
+    setup_environment_variables(env_vars)
     
     # 验证GPU配置
     validated_num_gpus, validated_tensor_parallel_size = validate_gpu_config(
-        args.num_gpus, args.tensor_parallel_size
+        num_gpus, tensor_parallel_size
     )
     
-    if validated_num_gpus != args.num_gpus:
-        args.num_gpus = validated_num_gpus
-    if validated_tensor_parallel_size != (args.tensor_parallel_size or args.num_gpus):
-        args.tensor_parallel_size = validated_tensor_parallel_size
+    if validated_num_gpus != num_gpus:
+        num_gpus = validated_num_gpus
+    if validated_tensor_parallel_size != (tensor_parallel_size or num_gpus):
+        tensor_parallel_size = validated_tensor_parallel_size
     
     # 估算并发任务数
     if validated_num_gpus > 0:
         import torch
         available_gpus = torch.cuda.device_count()
-        max_concurrent = estimate_concurrent_tasks(args.num_gpus, available_gpus)
+        max_concurrent = estimate_concurrent_tasks(num_gpus, available_gpus)
         print(f"📈 预估最大并发任务数: {max_concurrent} (基于 {available_gpus} 个GPU)")
         
-        if max_concurrent == 1 and args.num_gpus > 1:
-            print(f"💡 提示: 由于每个任务需要 {args.num_gpus} GPU，任务将串行执行")
+        if max_concurrent == 1 and num_gpus > 1:
+            print(f"💡 提示: 由于每个任务需要 {num_gpus} GPU，任务将串行执行")
         elif max_concurrent > 1:
-            total_gpu_usage = max_concurrent * args.num_gpus
+            total_gpu_usage = max_concurrent * num_gpus
             print(f"💡 提示: 最多 {max_concurrent} 个任务并行，总计使用 {total_gpu_usage} GPU")
     
     if args.force_rerun:
@@ -966,19 +1098,19 @@ def main():
         print(f"🔄 运行模式: 智能续传 (跳过已完成)")
     
     print(f"🤖 调度模式: Ray自动资源管理")
-    print(f"🔧 特性: 支持动态GPU配置")
+    print(f"🔧 特性: 支持动态GPU配置和环境变量")
     
     # 如果只是查看进度，不需要初始化Ray
     if args.show_progress:
         print(f"\n📊 显示当前进度:")
-        progress_tracker = ProgressTracker(args.progress_file)
+        progress_tracker = ProgressTracker(progress_file)
         progress_tracker.print_progress_summary()
         return
     
     # 初始化Ray
-    if args.ray_address:
-        print(f"🌐 连接到Ray集群: {args.ray_address}")
-        ray.init(address=args.ray_address)
+    if ray_address:
+        print(f"🌐 连接到Ray集群: {ray_address}")
+        ray.init(address=ray_address)
     else:
         print(f"🖥️  启动本地Ray集群")
         ray.init()
@@ -986,30 +1118,32 @@ def main():
     try:
         # 创建批量评测管理器
         manager = BatchEvaluationManager(
-            config_file=args.config,
-            tasks=args.tasks,
-            progress_file=args.progress_file,
-            num_gpus=args.num_gpus,
-            tensor_parallel_size=args.tensor_parallel_size
+            config_file=config['config'],
+            tasks=tasks,
+            progress_file=progress_file,
+            num_gpus=num_gpus,
+            tensor_parallel_size=tensor_parallel_size,
+            env_vars=env_vars
         )
         
         # 运行批量评测
         results = manager.run_batch_evaluation(
             force_rerun=args.force_rerun,
             retry_failed_only=args.retry_failed_only,
-            gpu_memory_utilization=args.gpu_memory_utilization
+            gpu_memory_utilization=gpu_memory_utilization
         )
         
         print(f"\n🎉 所有任务处理完成!")
-        print(f"📊 进度文件: {args.progress_file}")
+        print(f"📊 进度文件: {progress_file}")
         print(f"📄 汇总文件: ./batch_evaluation_summaries/")
         print(f"💡 提示: 使用 --show-progress 可以随时查看进度")
         print(f"💡 提示: 使用 --retry-failed-only 可以只重跑失败的任务")
         print(f"💡 提示: 使用 --num-gpus N 可以指定每个任务使用的GPU数量")
+        print(f"💡 提示: 通过修改YAML配置文件可以调整所有参数")
         
     except KeyboardInterrupt:
         print(f"\n⚠️  用户中断评测")
-        print(f"📊 当前进度已保存到: {args.progress_file}")
+        print(f"📊 当前进度已保存到: {progress_file}")
         print(f"💡 可以使用相同命令重新启动以继续未完成的任务")
     except Exception as e:
         print(f"💥 评测过程出现错误: {e}")
